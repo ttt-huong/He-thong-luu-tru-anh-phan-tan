@@ -292,5 +292,5 @@ Hệ thống này có thể được nâng cấp để phục vụ:
 
 **Phiên bản**: 2.0
 **Ngày cập nhật**: 22/01/2026
-**Tác giả**: Bạn
+
 
