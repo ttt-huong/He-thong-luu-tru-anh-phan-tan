@@ -201,7 +201,7 @@
     <script src="js/auth.js"></script>
     <script>
         // Xử lý đăng nhập
-        document.getElementById('l.oginForm').addEventListener('submit', async (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             // Validate
@@ -225,7 +225,7 @@
             btnText.innerHTML = '<span class="loading"></span>Đang xử lý...';
 
             try {
-                const response = await fetch('http://localhost:5000/api/auth/login', {
+                const response = await fetch(`${AUTH_API_BASE}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -240,16 +240,16 @@
 
                 if (response.ok) {
                     // Lưu token với expiry time
-                    saveToken(data.token, data.username, data.user_id);
+                    saveToken(data.token, data.user.username, data.user.id);
 
                     showAlert('Đăng nhập thành công! Chuyển hướng...', 'success');
                     
                     // Chuyển hướng sau 1 giây
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = 'files.html';
                     }, 1000);
                 } else {
-                    showAlert(data.message || 'Đăng nhập thất bại', 'error');
+                    showAlert(data.error || data.message || 'Đăng nhập thất bại', 'error');
                 }
             } catch (error) {
                 console.error('Login error:', error);
@@ -274,7 +274,7 @@
 
         // Kiểm tra nếu user đã đăng nhập
         if (localStorage.getItem('token')) {
-            window.location.href = 'index.html';
+            window.location.href = 'files.html';
         }
     </script>
 </body>

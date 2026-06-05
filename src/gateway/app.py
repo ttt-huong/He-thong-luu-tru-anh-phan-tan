@@ -225,6 +225,21 @@ def create_app():
     def admin_html():
         """Serve admin.html explicitly"""
         return send_from_directory(frontend_dir, 'admin.html')
+
+    @app.route('/login.html', methods=['GET'])
+    def login_html():
+        """Serve login.html explicitly"""
+        return send_from_directory(frontend_dir, 'login.html')
+
+    @app.route('/register.html', methods=['GET'])
+    def register_html():
+        """Serve register.html explicitly"""
+        return send_from_directory(frontend_dir, 'register.html')
+
+    @app.route('/files.html', methods=['GET'])
+    def files_html():
+        """Serve files.html explicitly"""
+        return send_from_directory(frontend_dir, 'files.html')
     
     @app.route('/styles.css', methods=['GET'])
     def styles_css():

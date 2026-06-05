@@ -131,10 +131,10 @@ def get_user_files(session: Session, user_id: int, include_deleted: bool = False
     Returns:
         List of File objects
     """
-    query = session.query(File).filter(File.user_id == user_id)
+    query = session.query(File).filter(File.user_id == int(user_id))
     
     if not include_deleted:
-        query = query.filter(File.deleted == False)
+        query = query.filter(File.deleted.is_(False), File.is_deleted.is_(False))
     
     return query.all()
 
@@ -152,7 +152,9 @@ def get_public_files(session: Session, limit: int = 50, offset: int = 0) -> list
         List of File objects
     """
     return session.query(File).filter(
-        (File.is_public == True) & (File.deleted == False)
+        File.is_public.is_(True),
+        File.deleted.is_(False),
+        File.is_deleted.is_(False)
     ).order_by(File.upload_date.desc()).limit(limit).offset(offset).all()
 
 

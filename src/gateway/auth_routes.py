@@ -20,6 +20,36 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres_secure_
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 
+COMMON_PASSWORDS = {
+    'password',
+    'password1',
+    'password123',
+    'admin',
+    'admin123',
+    'admin1234',
+    'qwerty123',
+    '12345678',
+    '123456789',
+    'letmein123',
+    'welcome1',
+    'welcome123',
+}
+
+
+def validate_password_policy(password: str):
+    """Return an error message if password does not meet the MVP policy."""
+    if password.lower() in COMMON_PASSWORDS:
+        return 'password is too common'
+    if len(password) < 8:
+        return 'password must be at least 8 characters'
+    if not any(ch.isupper() for ch in password):
+        return 'password must contain at least one uppercase letter'
+    if not any(ch.islower() for ch in password):
+        return 'password must contain at least one lowercase letter'
+    if not any(ch.isdigit() for ch in password):
+        return 'password must contain at least one number'
+    return None
+
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -55,8 +85,9 @@ def register():
         if len(username) < 3:
             return jsonify({'error': 'username must be at least 3 characters'}), 400
         
-        if len(password) < 6:
-            return jsonify({'error': 'password must be at least 6 characters'}), 400
+        password_error = validate_password_policy(password)
+        if password_error:
+            return jsonify({'error': password_error}), 400
         
         if '@' not in email:
             return jsonify({'error': 'Invalid email format'}), 400

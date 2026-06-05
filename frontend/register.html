@@ -279,6 +279,10 @@
                         <div class="requirement-icon">✓</div>
                         <span>Ít nhất 1 chữ số (0-9)</span>
                     </div>
+                    <div class="requirement" id="req-common">
+                        <div class="requirement-icon">✓</div>
+                        <span>Không dùng mật khẩu phổ biến</span>
+                    </div>
                 </div>
                 <div class="error-message">Mật khẩu không đáp ứng các yêu cầu</div>
             </div>
@@ -310,6 +314,20 @@
     <script>
         // Validate password requirements
         const passwordInput = document.getElementById('password');
+        const commonPasswords = new Set([
+            'password',
+            'password1',
+            'password123',
+            'admin',
+            'admin123',
+            'admin1234',
+            'qwerty123',
+            '12345678',
+            '123456789',
+            'letmein123',
+            'welcome1',
+            'welcome123',
+        ]);
         
         passwordInput.addEventListener('input', () => {
             const password = passwordInput.value;
@@ -318,6 +336,7 @@
             validatePasswordRequirement('req-uppercase', /[A-Z]/.test(password));
             validatePasswordRequirement('req-lowercase', /[a-z]/.test(password));
             validatePasswordRequirement('req-number', /[0-9]/.test(password));
+            validatePasswordRequirement('req-common', !commonPasswords.has(password.toLowerCase()));
         });
 
         function validatePasswordRequirement(id, isValid) {
@@ -393,7 +412,8 @@
             return password.length >= 8 &&
                    /[A-Z]/.test(password) &&
                    /[a-z]/.test(password) &&
-                   /[0-9]/.test(password);
+                   /[0-9]/.test(password) &&
+                   !commonPasswords.has(password.toLowerCase());
         }
 
         function showFieldError(fieldName, message) {
@@ -417,7 +437,7 @@
             btnText.innerHTML = '<span class="loading"></span>Đang xử lý...';
 
             try {
-                const response = await fetch('http://localhost:5000/api/auth/register', {
+                const response = await fetch(`${AUTH_API_BASE}/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -435,10 +455,10 @@
                 if (response.ok) {
                     // Lưu token nếu backend tự động đăng nhập sau khi đăng ký
                     if (data.token) {
-                        saveToken(data.token, data.username, data.user_id);
+                        saveToken(data.token, data.user.username, data.user.id);
                         showAlert('Đăng ký thành công! Chuyển hướng...', 'success');
                         setTimeout(() => {
-                            window.location.href = 'index.html';
+                            window.location.href = 'files.html';
                         }, 1000);
                     } else {
                         showAlert('Đăng ký thành công! Chuyển hướng đến trang đăng nhập...', 'success');
@@ -447,7 +467,7 @@
                         }, 2000);
                     }
                 } else {
-                    showAlert(data.message || 'Đăng ký thất bại', 'error');
+                    showAlert(data.error || data.message || 'Đăng ký thất bại', 'error');
                 }
             } catch (error) {
                 console.error('Register error:', error);
@@ -466,7 +486,7 @@
 
         // Kiểm tra nếu user đã đăng nhập
         if (localStorage.getItem('token')) {
-            window.location.href = 'index.html';
+            window.location.href = 'files.html';
         }
     </script>
 </body>

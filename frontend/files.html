@@ -20,6 +20,10 @@
             padding: 20px;
         }
 
+        body.auth-pending {
+            visibility: hidden;
+        }
+
         .header {
             background: white;
             padding: 20px;
@@ -139,6 +143,29 @@
             gap: 15px;
             margin-top: 20px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 150px;
+        }
+
+        .option-group label {
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .option-group select,
+        .option-group input {
+            padding: 9px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
         }
 
         .checkbox-group {
@@ -329,7 +356,7 @@
         }
     </style>
 </head>
-<body>
+<body class="auth-pending">
     <!-- Header -->
     <div class="header">
         <h1>📁 Quản Lý File</h1>
@@ -352,7 +379,7 @@
             <div class="upload-zone" id="dropZone">
                 <i class="fa-solid fa-file-arrow-up"></i>
                 <p>Kéo file vào đây hoặc click để chọn</p>
-                <small>Hỗ trợ tất cả các loại file (Giới hạn: 100MB)</small>
+                <small>Hỗ trợ ảnh, PDF và TXT (Giới hạn: 10MB)</small>
                 <input type="file" id="fileInput">
             </div>
 
@@ -360,6 +387,19 @@
                 <div class="checkbox-group">
                     <input type="checkbox" id="isPublic" name="isPublic">
                     <label for="isPublic">📤 Công khai (có thể chia sẻ)</label>
+                </div>
+                <div class="option-group">
+                    <label for="ttlSeconds">Tự hủy sau</label>
+                    <select id="ttlSeconds">
+                        <option value="300">5 phút</option>
+                        <option value="3600" selected>1 giờ</option>
+                        <option value="86400">1 ngày</option>
+                        <option value="604800">7 ngày</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label for="downloadLimit">Số lượt tải</label>
+                    <input type="number" id="downloadLimit" min="1" max="50" value="3">
                 </div>
                 <button class="upload-btn" id="uploadBtn" disabled>
                     <i class="fa-solid fa-arrow-up"></i> Upload
@@ -406,6 +446,8 @@
                 window.location.href = 'login.html';
                 return;
             }
+
+            document.body.classList.remove('auth-pending');
 
             // Update user info
             const user = getCurrentUser();
@@ -467,7 +509,9 @@
                 uploadBtn.innerHTML = '<span class="loading"></span>Đang upload...';
 
                 const isPublic = document.getElementById('isPublic').checked;
-                const success = await uploadFile(selectedFile, isPublic);
+                const ttlSeconds = document.getElementById('ttlSeconds').value;
+                const downloadLimit = document.getElementById('downloadLimit').value;
+                const success = await uploadFile(selectedFile, isPublic, ttlSeconds, downloadLimit);
 
                 uploadBtn.disabled = false;
                 uploadBtn.innerHTML = btnText;
@@ -478,15 +522,17 @@
                     selectedFile = null;
                     uploadBtn.disabled = true;
                     document.getElementById('isPublic').checked = false;
+                    document.getElementById('ttlSeconds').value = '3600';
+                    document.getElementById('downloadLimit').value = '3';
                     await loadFileList();
                 }
             });
 
             function handleFileSelect(file) {
-                const maxSize = 100 * 1024 * 1024; // 100MB
+                const maxSize = 10 * 1024 * 1024; // 10MB
                 
                 if (file.size > maxSize) {
-                    showAlert('File quá lớn (tối đa 100MB)', 'error');
+                    showAlert('File quá lớn (tối đa 10MB)', 'error');
                     return;
                 }
 
@@ -519,7 +565,7 @@
             document.getElementById('emptyMessage').style.display = 'none';
 
             files.forEach(file => {
-                if (file.user_id === user.userId) {
+                if (String(file.user_id) === String(user.userId)) {
                     ownFileCount++;
                 }
                 if (file.is_public) {
@@ -530,7 +576,7 @@
             document.getElementById('ownFileCount').textContent = ownFileCount;
             document.getElementById('publicFileCount').textContent = publicFileCount;
 
-            await displayFileList();
+            await displayFileList(files);
         }
     </script>
 </body>

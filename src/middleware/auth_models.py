@@ -102,11 +102,17 @@ class File(Base):
             'user_id': self.user_id,
             'is_public': self.is_public,
             'primary_node': self.primary_node,
+            'replica_nodes': self.replica_nodes,
             'storage_node': self.storage_node,
             'upload_date': self.upload_date.isoformat() if self.upload_date else None,
             'download_count': self.download_count,
+            'download_limit': self.download_limit,
+            'downloads_left': self.downloads_left,
             'checksum': self.checksum,
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'is_deleted': self.is_deleted,
+            'deleted': self.deleted,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None
         }
         if include_path:
             data['file_path'] = self.file_path
@@ -126,6 +132,7 @@ class FileAccessLog(Base):
     action = Column(String(50), nullable=False, index=True)  # 'download', 'view', 'delete', 'share'
     access_date = Column(DateTime, default=datetime.utcnow)
     ip_address = Column(String(45), nullable=True)
+    details = Column(Text, nullable=True)
 
     # Relationships
     user = relationship('User', back_populates='access_logs')
@@ -139,7 +146,8 @@ class FileAccessLog(Base):
             'file_id': self.file_id,
             'action': self.action,
             'access_date': self.access_date.isoformat() if self.access_date else None,
-            'ip_address': self.ip_address
+            'ip_address': self.ip_address,
+            'details': self.details
         }
 
     def __repr__(self):
@@ -157,7 +165,8 @@ class FileAccessLog(Base):
             'file_id': self.file_id,
             'action': self.action,
             'access_date': self.access_date.isoformat() if self.access_date else None,
-            'ip_address': self.ip_address
+            'ip_address': self.ip_address,
+            'details': self.details
         }
 
     def __repr__(self):

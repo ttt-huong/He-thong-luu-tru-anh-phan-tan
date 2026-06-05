@@ -7,6 +7,9 @@ const USERNAME_KEY = 'username';
 const USER_ID_KEY = 'user_id';
 const TOKEN_EXPIRY_KEY = 'token_expiry';
 const CHECK_TOKEN_INTERVAL = 60000; // Check token every 1 minute
+const AUTH_API_BASE = window.location.protocol === 'file:'
+    ? 'http://localhost:5000/api'
+    : `${window.location.origin}/api`;
 
 let tokenCheckInterval = null;
 
@@ -238,7 +241,7 @@ function requireAuth() {
  */
 function redirectIfLoggedIn() {
     if (isLoggedIn()) {
-        window.location.href = 'index.html';
+        window.location.href = 'files.html';
     }
 }
 

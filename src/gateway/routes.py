@@ -335,8 +335,8 @@ def download_file(file_id: str):
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@api_bp.route('/files', methods=['GET'])
-def list_files():
+@api_bp.route('/legacy/files', methods=['GET'])
+def list_legacy_files():
     """Return recent files with minimal metadata for gallery (masonry).
     
     Requires JWT authentication - returns 401 if no valid token provided

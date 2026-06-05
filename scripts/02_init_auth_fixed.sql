@@ -27,11 +27,35 @@ ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE;
 ALTER TABLE files
 ADD COLUMN IF NOT EXISTS accessed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
 
+-- Add file management columns used by authenticated upload/download routes
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS file_type VARCHAR(100);
+
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS download_count INTEGER DEFAULT 0;
+
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS storage_node VARCHAR(10);
+
+ALTER TABLE files
+ADD COLUMN IF NOT EXISTS file_path TEXT;
+
 -- Indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_files_user_id ON files(user_id);
 CREATE INDEX IF NOT EXISTS idx_files_is_public ON files(is_public);
+CREATE INDEX IF NOT EXISTS idx_files_storage_node ON files(storage_node);
+CREATE INDEX IF NOT EXISTS idx_files_deleted ON files(deleted);
 
 -- Create audit log table for tracking file access
 CREATE TABLE IF NOT EXISTS file_access_logs (

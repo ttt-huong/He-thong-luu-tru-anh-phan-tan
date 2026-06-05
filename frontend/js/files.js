@@ -2,12 +2,14 @@
 // File Management API & UI
 // ==========================================
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = window.location.protocol === 'file:'
+    ? 'http://localhost:5000/api'
+    : `${window.location.origin}/api`;
 
 /**
  * Upload file
  */
-async function uploadFile(file, isPublic = false) {
+async function uploadFile(file, isPublic = false, ttlSeconds = 3600, downloadLimit = 3) {
     const token = getToken();
     if (!token) {
         showAlert('Phiên đăng nhập hết hạn', 'error');
@@ -17,6 +19,8 @@ async function uploadFile(file, isPublic = false) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('is_public', isPublic ? 'true' : 'false');
+    formData.append('ttl_seconds', ttlSeconds);
+    formData.append('download_limit', downloadLimit);
 
     try {
         const response = await fetch(`${API_BASE}/files/upload`, {
@@ -32,7 +36,7 @@ async function uploadFile(file, isPublic = false) {
             return data.file;
         } else {
             const error = await response.json();
-            showAlert(error.message || 'Upload thất bại', 'error');
+            showAlert(error.error || error.message || 'Upload thất bại', 'error');
             return null;
         }
     } catch (error) {
@@ -70,6 +74,7 @@ async function getFiles() {
         } else {
             const error = await response.json();
             console.error('Get files error:', error);
+            showAlert(error.error || error.message || 'Tải danh sách file thất bại', 'error');
             return [];
         }
     } catch (error) {
@@ -184,14 +189,20 @@ async function getFileInfo(fileId) {
 /**
  * Display file list
  */
-async function displayFileList() {
-    const files = await getFiles();
+async function displayFileList(files = null) {
+    if (!files) {
+        files = await getFiles();
+    }
     const user = getCurrentUser();
     
     if (!files || files.length === 0) {
         const emptyMsg = document.getElementById('emptyMessage');
         if (emptyMsg) {
             emptyMsg.style.display = 'block';
+        }
+        const container = document.getElementById('fileListContainer');
+        if (container) {
+            container.innerHTML = '';
         }
         return;
     }
@@ -202,7 +213,7 @@ async function displayFileList() {
     container.innerHTML = '';
 
     files.forEach(file => {
-        const isOwner = file.user_id === user.userId;
+        const isOwner = String(file.user_id) === String(user.userId);
         const fileCard = createFileCard(file, isOwner);
         container.appendChild(fileCard);
     });
@@ -236,11 +247,15 @@ function createFileCard(file, isOwner) {
                     ${escapeHtml(file.original_name || file.filename)}
                 </div>
                 <div style="font-size: 12px; color: #999;">
-                    <span>${formatFileSize(file.size || 0)}</span>
+                    <span>${formatFileSize(file.file_size || file.size || 0)}</span>
                     <span style="margin: 0 8px;">•</span>
-                    <span>${formatDate(file.created_at)}</span>
+                    <span>${formatDate(file.upload_date || file.created_at)}</span>
                     <span style="margin: 0 8px;">•</span>
                     <span>${file.is_public ? '🌍 Công khai' : '🔒 Riêng tư'}</span>
+                    <span style="margin: 0 8px;">•</span>
+                    <span>Còn ${file.downloads_left ?? '?'} lượt tải</span>
+                    <span style="margin: 0 8px;">•</span>
+                    <span>Hết hạn: ${formatDateTime(file.expires_at)}</span>
                     ${isOwner ? '' : `<span style="margin: 0 8px;">•</span><span>👤 ${escapeHtml(file.owner_username || 'Unknown')}</span>`}
                 </div>
             </div>
@@ -335,20 +350,42 @@ function createFileCard(file, isOwner) {
 /**
  * Download file
  */
-function downloadFile(fileId, filename) {
+async function downloadFile(fileId, filename) {
     const token = getToken();
     if (!token) {
         showAlert('Phiên đăng nhập hết hạn', 'error');
         return;
     }
 
-    // Create download link
-    const link = document.createElement('a');
-    link.href = `${API_BASE}/files/${fileId}?token=${token}`;
-    link.download = filename || 'file';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+        const response = await fetch(`${API_BASE}/files/${fileId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            showAlert(error.error || 'Tải file thất bại', 'error');
+            await displayFileList();
+            return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || 'file';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        await displayFileList();
+    } catch (error) {
+        console.error('Download error:', error);
+        showAlert('Lỗi tải file: ' + error.message, 'error');
+    }
 }
 
 /**
@@ -366,7 +403,9 @@ function formatFileSize(bytes) {
  * Utility: Format date
  */
 function formatDate(dateString) {
+    if (!dateString) return 'Không rõ';
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return 'Không rõ';
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
@@ -379,6 +418,16 @@ function formatDate(dateString) {
     if (diffDays < 7) return `${diffDays} ngày trước`;
     
     return date.toLocaleDateString('vi-VN');
+}
+
+/**
+ * Utility: Format absolute date time
+ */
+function formatDateTime(dateString) {
+    if (!dateString) return 'Không rõ';
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return 'Không rõ';
+    return date.toLocaleString('vi-VN');
 }
 
 /**
