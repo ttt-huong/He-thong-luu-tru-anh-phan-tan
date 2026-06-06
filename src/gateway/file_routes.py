@@ -411,7 +411,7 @@ def delete_file(file_id):
 def update_file_permissions(file_id):
     try:
         user_id = get_current_user_id()
-        data = request.get_json()
+        data = request.get_json(silent=True)
         if not data or 'is_public' not in data:
             return jsonify({'error': 'is_public field is required'}), 400
         if not isinstance(data['is_public'], bool):
