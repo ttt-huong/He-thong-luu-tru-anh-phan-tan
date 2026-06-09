@@ -10,13 +10,14 @@ import os
 import uuid
 
 from flask import Blueprint, request, jsonify, send_file
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, or_
 from sqlalchemy.orm import sessionmaker
 from werkzeug.utils import secure_filename
 
 from src.gateway.storage_client import StorageNodeClient
 from src.middleware.auth_models import User, File, FileAccessLog
 from src.middleware.jwt_auth import jwt_required, get_current_user_id
+from src.middleware.rate_limiter import rate_limited
 from src.utils.file_permissions import FilePermissionManager
 
 
@@ -178,11 +179,53 @@ def _mark_deleted(file_record):
 
 
 def _is_expired(file_record):
-    return bool(file_record.expires_at and datetime.utcnow() > file_record.expires_at)
+    return bool(file_record.expires_at and datetime.utcnow() >= file_record.expires_at)
+
+
+def _is_active_file_filter(now=None):
+    now = now or datetime.utcnow()
+    return (
+        File.deleted.is_(False),
+        File.is_deleted.is_(False),
+        or_(File.expires_at.is_(None), File.expires_at > now)
+    )
+
+
+def _cleanup_expired_files(session, user_id=None, limit=100):
+    """Mark expired files as deleted and remove physical objects from storage."""
+    query = session.query(File).filter(
+        File.deleted.is_(False),
+        File.is_deleted.is_(False),
+        File.expires_at.isnot(None),
+        File.expires_at <= datetime.utcnow()
+    )
+    if user_id is not None:
+        query = query.filter(File.user_id == int(user_id))
+
+    expired_files = query.limit(limit).all()
+    cleaned = []
+    for file_record in expired_files:
+        _mark_deleted(file_record)
+        deleted_nodes = _delete_from_storage(file_record)
+        _audit(
+            session,
+            file_record.user_id,
+            file_record.id,
+            'expired',
+            f'expired_by_cleanup;nodes={",".join(deleted_nodes)}'
+        )
+        cleaned.append(file_record.id)
+    return cleaned
+
+
+def _rate_key():
+    user_id = get_current_user_id()
+    return f'user:{user_id}' if user_id else (request.remote_addr or 'unknown')
 
 
 @file_bp.route('/upload', methods=['POST'])
 @jwt_required
+@rate_limited(limit=20, window_seconds=60, key_func=_rate_key)
 def upload_file():
     try:
         user_id = get_current_user_id()
@@ -267,6 +310,7 @@ def upload_file():
 
 @file_bp.route('', methods=['GET'])
 @jwt_required
+@rate_limited(limit=120, window_seconds=60, key_func=_rate_key)
 def list_files():
     try:
         user_id = get_current_user_id()
@@ -276,17 +320,18 @@ def list_files():
 
         session = Session()
         try:
+            _cleanup_expired_files(session, user_id=user_id)
+            session.commit()
+
             files_list = session.query(File).filter(
                 File.user_id == int(user_id),
-                File.deleted.is_(False),
-                File.is_deleted.is_(False)
+                *_is_active_file_filter()
             ).order_by(File.upload_date.desc()).all()
             if not show_all:
                 public_files = session.query(File).filter(
                     File.is_public.is_(True),
                     File.user_id != int(user_id),
-                    File.deleted.is_(False),
-                    File.is_deleted.is_(False)
+                    *_is_active_file_filter()
                 ).order_by(File.upload_date.desc()).limit(max(limit - len(files_list), 0)).offset(offset).all()
                 own_ids = {f.id for f in files_list}
                 files_list.extend([f for f in public_files if f.id not in own_ids])
@@ -305,6 +350,7 @@ def list_files():
 
 @file_bp.route('/<file_id>', methods=['GET'])
 @jwt_required
+@rate_limited(limit=60, window_seconds=60, key_func=_rate_key)
 def download_file(file_id):
     try:
         user_id = get_current_user_id()
@@ -375,6 +421,7 @@ def download_file(file_id):
 
 @file_bp.route('/<file_id>', methods=['DELETE'])
 @jwt_required
+@rate_limited(limit=30, window_seconds=60, key_func=_rate_key)
 def delete_file(file_id):
     try:
         user_id = get_current_user_id()
@@ -408,6 +455,7 @@ def delete_file(file_id):
 
 @file_bp.route('/<file_id>/permissions', methods=['PUT'])
 @jwt_required
+@rate_limited(limit=30, window_seconds=60, key_func=_rate_key)
 def update_file_permissions(file_id):
     try:
         user_id = get_current_user_id()
@@ -447,21 +495,59 @@ def update_file_permissions(file_id):
 
 @file_bp.route('/audit-logs', methods=['GET'])
 @jwt_required
+@rate_limited(limit=60, window_seconds=60, key_func=_rate_key)
 def audit_logs():
     try:
         user_id = get_current_user_id()
         limit = min(int(request.args.get('limit', 50)), 100)
+        file_id = request.args.get('file_id')
         session = Session()
         try:
-            logs = session.query(FileAccessLog).filter(
-                FileAccessLog.user_id == user_id
-            ).order_by(FileAccessLog.access_date.desc()).limit(limit).all()
+            query = session.query(FileAccessLog)
+
+            if file_id:
+                file_record = session.query(File).filter(File.id == file_id).first()
+                if not file_record:
+                    return jsonify({'error': 'File not found'}), 404
+                if file_record.user_id != int(user_id):
+                    return jsonify({'error': 'Access denied: Only file owner can view file audit logs'}), 403
+                query = query.filter(FileAccessLog.file_id == file_id)
+            else:
+                query = query.filter(FileAccessLog.user_id == int(user_id))
+
+            logs = query.order_by(FileAccessLog.access_date.desc()).limit(limit).all()
             return jsonify({'count': len(logs), 'logs': [log.to_dict() for log in logs]}), 200
         finally:
             session.close()
     except Exception as exc:
         logger.error(f'Audit log error: {exc}', exc_info=True)
         return jsonify({'error': 'Failed to retrieve audit logs'}), 500
+
+
+@file_bp.route('/cleanup-expired', methods=['POST'])
+@jwt_required
+@rate_limited(limit=10, window_seconds=60, key_func=_rate_key)
+def cleanup_expired_files():
+    try:
+        user_id = get_current_user_id()
+        session = Session()
+        try:
+            cleaned = _cleanup_expired_files(session, user_id=user_id)
+            session.commit()
+            return jsonify({
+                'message': 'Expired files cleaned',
+                'count': len(cleaned),
+                'file_ids': cleaned
+            }), 200
+        except Exception as exc:
+            session.rollback()
+            logger.error(f'Cleanup expired error: {exc}', exc_info=True)
+            return jsonify({'error': 'Failed to clean expired files'}), 500
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.error(f'Unexpected cleanup error: {exc}', exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @file_bp.route('/user/<int:user_id>/files', methods=['GET'])
@@ -477,7 +563,8 @@ def get_user_public_files(user_id):
                 (File.user_id == user_id) &
                 (File.is_public == True) &
                 (File.deleted == False) &
-                (File.is_deleted == False)
+                (File.is_deleted == False) &
+                ((File.expires_at == None) | (File.expires_at > datetime.utcnow()))
             ).all()
 
             return jsonify({

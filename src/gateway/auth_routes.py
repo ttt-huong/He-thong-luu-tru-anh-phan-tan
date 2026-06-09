@@ -10,6 +10,7 @@ import logging
 
 from src.middleware.auth_models import Base, User
 from src.middleware.jwt_auth import create_jwt_token, jwt_required, get_current_user_id
+from src.middleware.rate_limiter import rate_limited
 
 # Setup
 auth_bp = Blueprint('auth', __name__)
@@ -52,6 +53,7 @@ def validate_password_policy(password: str):
 
 
 @auth_bp.route('/register', methods=['POST'])
+@rate_limited(limit=10, window_seconds=60)
 def register():
     """
     Register new user
@@ -68,7 +70,7 @@ def register():
         JWT token if successful
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
         
         # Validation
         if not data:
@@ -135,6 +137,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@rate_limited(limit=8, window_seconds=60)
 def login():
     """
     Login user
@@ -149,7 +152,7 @@ def login():
         JWT token if successful
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
         
         if not data:
             return jsonify({'error': 'Request body is required'}), 400
@@ -243,7 +246,7 @@ def update_profile():
     """
     try:
         user_id = get_current_user_id()
-        data = request.get_json()
+        data = request.get_json(silent=True)
         
         if not data:
             return jsonify({'error': 'Request body is required'}), 400
