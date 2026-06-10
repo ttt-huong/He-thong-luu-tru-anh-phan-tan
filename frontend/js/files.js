@@ -181,10 +181,12 @@ function createFileCard(file, isOwner) {
     const statusText = file.is_public ? 'Công khai' : 'Riêng tư';
     const downloadsLeft = file.downloads_left ?? 0;
     const shareUrl = `${window.location.origin}/share.html?id=${encodeURIComponent(file.id)}`;
+    const expired = hasExpired(file.expires_at);
     card.className = 'file-card vault-file-row';
     card.dataset.name = fileName.toLowerCase();
     card.dataset.visibility = file.is_public ? 'public' : 'private';
     card.dataset.expiring = isExpiringSoon(file.expires_at) ? 'true' : 'false';
+    card.dataset.expired = expired ? 'true' : 'false';
 
     card.innerHTML = `
         <div class="file-card-info">
@@ -224,12 +226,23 @@ function createFileCard(file, isOwner) {
     copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>';
     copyBtn.title = file.is_public ? 'Sao chép link chia sẻ' : 'Chỉ chia sẻ được file công khai';
     copyBtn.onclick = async () => {
+        if (hasExpired(file.expires_at)) {
+            showAlert('File đã hết hạn nên không thể lấy link chia sẻ.', 'error');
+            await displayFileList();
+            return;
+        }
+
         if (!file.is_public) {
             showAlert('File đang riêng tư. Hãy chuyển sang công khai trước khi chia sẻ link.', 'error');
             return;
         }
 
-        await copyToClipboard(shareUrl);
+        const copied = await copyToClipboard(shareUrl);
+        if (!copied) {
+            showAlert('Không thể tự sao chép link. Link: ' + shareUrl, 'error');
+            return;
+        }
+
         showAlert('Đã sao chép link chia sẻ tự hủy.', 'success');
         if (typeof logAction === 'function') {
             logAction('SHARE', `Copied link for ${file.id.substring(0, 8)}.`);
@@ -241,7 +254,15 @@ function createFileCard(file, isOwner) {
     downloadBtn.className = 'action-btn download';
     downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
     downloadBtn.title = 'Tải xuống';
-    downloadBtn.onclick = () => downloadFile(file.id, fileName);
+    downloadBtn.disabled = expired;
+    downloadBtn.onclick = async () => {
+        if (hasExpired(file.expires_at)) {
+            showAlert('File đã hết hạn nên không thể tải xuống.', 'error');
+            await displayFileList();
+            return;
+        }
+        downloadFile(file.id, fileName);
+    };
     actions.appendChild(downloadBtn);
 
     if (isOwner) {
@@ -335,6 +356,12 @@ function isExpiringSoon(dateString) {
     return msLeft > 0 && msLeft < 60 * 60 * 1000;
 }
 
+function hasExpired(dateString) {
+    if (!dateString) return false;
+    const expiresAt = new Date(dateString);
+    return !Number.isNaN(expiresAt.getTime()) && expiresAt <= new Date();
+}
+
 function formatTimeLeft(msLeft) {
     if (msLeft <= 0) return 'Đã hết hạn';
     const totalSeconds = Math.floor(msLeft / 1000);
@@ -349,30 +376,53 @@ function formatTimeLeft(msLeft) {
 }
 
 function refreshCountdownBadges() {
+    let shouldReload = false;
+
     document.querySelectorAll('.countdown-badge').forEach((badge) => {
         const expiresAt = badge.dataset.expiresAt;
         const msLeft = new Date(expiresAt) - new Date();
+        const wasExpired = badge.dataset.expired === 'true';
+        const isExpired = msLeft <= 0;
         badge.classList.toggle('warning', msLeft > 0 && msLeft < 30 * 60 * 1000);
-        badge.classList.toggle('danger', msLeft <= 0);
-        badge.innerHTML = `<i class="fa-solid ${msLeft <= 0 ? 'fa-triangle-exclamation' : 'fa-clock'}"></i> ${formatTimeLeft(msLeft)}`;
+        badge.classList.toggle('danger', isExpired);
+        badge.dataset.expired = isExpired ? 'true' : 'false';
+        badge.innerHTML = `<i class="fa-solid ${isExpired ? 'fa-triangle-exclamation' : 'fa-clock'}"></i> ${formatTimeLeft(msLeft)}`;
+        if (isExpired && !wasExpired) {
+            shouldReload = true;
+        }
     });
+
+    if (shouldReload) {
+        setTimeout(() => displayFileList(), 500);
+    }
 }
 
 async function copyToClipboard(text) {
     if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return;
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (error) {
+            console.warn('Clipboard API failed, using fallback:', error);
+        }
     }
 
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    textarea.remove();
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        return copied;
+    } catch (error) {
+        console.error('Clipboard fallback failed:', error);
+        return false;
+    }
 }
 
 async function downloadFile(fileId, filename) {
