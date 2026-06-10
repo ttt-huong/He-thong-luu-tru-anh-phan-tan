@@ -3,316 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Ký - FileShare System</title>
+    <title>Đăng Ký - SecuShare</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <style>
-        .auth-container {
-            max-width: 450px;
-            margin: 30px auto;
-            padding: 30px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-header h1 {
-            color: #333;
-            font-size: 28px;
-            margin: 0;
-        }
-
-        .auth-header p {
-            color: #666;
-            margin: 10px 0 0 0;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            box-sizing: border-box;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-        }
-
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            box-sizing: border-box;
-            font-family: inherit;
-            resize: vertical;
-        }
-
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-        }
-
-        .error-message {
-            color: #d32f2f;
-            font-size: 13px;
-            margin-top: 3px;
-            display: none;
-        }
-
-        .form-group.error input,
-        .form-group.error textarea {
-            border-color: #d32f2f;
-        }
-
-        .form-group.error .error-message {
-            display: block;
-        }
-
-        .password-requirements {
-            font-size: 12px;
-            color: #666;
-            margin-top: 8px;
-            line-height: 1.5;
-        }
-
-        .requirement {
-            display: flex;
-            align-items: center;
-            margin: 4px 0;
-        }
-
-        .requirement-icon {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: #ddd;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            margin-right: 8px;
-            flex-shrink: 0;
-        }
-
-        .requirement.valid .requirement-icon {
-            background-color: #4CAF50;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-        }
-
-        .submit-btn:hover {
-            background-color: #45a049;
-        }
-
-        .submit-btn:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-        }
-
-        .auth-footer a {
-            color: #4CAF50;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .auth-footer a:hover {
-            text-decoration: underline;
-        }
-
-        .alert {
-            padding: 12px 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .alert.error {
-            background-color: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #d32f2f;
-        }
-
-        .alert.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border-left: 4px solid #4CAF50;
-        }
-
-        .alert.show {
-            display: block;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #4CAF50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 5px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-header">
-            <h1>📝 Đăng Ký</h1>
-            <p>Tạo tài khoản mới</p>
-        </div>
-
-        <div id="alertMessage" class="alert"></div>
-
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="username">Tên đăng nhập</label>
-                <input 
-                    type="text" 
-                    id="username" 
-                    name="username" 
-                    placeholder="Nhập tên đăng nhập"
-                    autocomplete="username"
-                    minlength="3"
-                    maxlength="50"
-                    required
-                >
-                <div class="error-message">Tên đăng nhập phải từ 3-50 ký tự</div>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    placeholder="Nhập email"
-                    autocomplete="email"
-                    required
-                >
-                <div class="error-message">Vui lòng nhập email hợp lệ</div>
-            </div>
-
-            <div class="form-group">
-                <label for="fullName">Họ tên</label>
-                <input 
-                    type="text" 
-                    id="fullName" 
-                    name="fullName" 
-                    placeholder="Nhập họ tên"
-                    autocomplete="name"
-                    maxlength="100"
-                >
-                <div class="error-message">Họ tên không hợp lệ</div>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Nhập mật khẩu"
-                    autocomplete="new-password"
-                    required
-                >
-                <div class="password-requirements">
-                    <div class="requirement" id="req-length">
-                        <div class="requirement-icon">✓</div>
-                        <span>Ít nhất 8 ký tự</span>
+    <div class="auth-split-wrapper">
+        <!-- Left Side: SecuShare identity + highlights -->
+        <div class="auth-brand-side">
+            <div class="brand-side-content">
+                <div class="brand-side-logo">
+                    <i class="fa-solid fa-shield-halved"></i> SecuShare
+                </div>
+                <h2>Distributed Image Storage Vault</h2>
+                <p>Hệ thống lưu trữ và chia sẻ hình ảnh phân tán an toàn tuyệt đối với cơ chế tự hủy và mã hóa mật mật.</p>
+                
+                <div class="security-highlights">
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="highlight-text">
+                            <strong>Mã Hóa Đầu Cuối (E2E)</strong>
+                            <span>Dữ liệu ảnh được mã hóa an toàn trước khi lưu trữ.</span>
+                        </div>
                     </div>
-                    <div class="requirement" id="req-uppercase">
-                        <div class="requirement-icon">✓</div>
-                        <span>Ít nhất 1 chữ cái viết hoa (A-Z)</span>
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="highlight-text">
+                            <strong>Tự Động Hủy Tài Nguyên (TTL)</strong>
+                            <span>Thiết lập thời gian tự hủy và giới hạn số lượt tải cho mỗi tệp tin.</span>
+                        </div>
                     </div>
-                    <div class="requirement" id="req-lowercase">
-                        <div class="requirement-icon">✓</div>
-                        <span>Ít nhất 1 chữ cái thường (a-z)</span>
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-server"></i></div>
+                        <div class="highlight-text">
+                            <strong>Lưu Trữ Phân Tán Đa Node</strong>
+                            <span>Dữ liệu được nhân bản và lưu trữ chéo trên cụm 3 Storage Nodes độc lập.</span>
+                        </div>
                     </div>
-                    <div class="requirement" id="req-number">
-                        <div class="requirement-icon">✓</div>
-                        <span>Ít nhất 1 chữ số (0-9)</span>
-                    </div>
-                    <div class="requirement" id="req-common">
-                        <div class="requirement-icon">✓</div>
-                        <span>Không dùng mật khẩu phổ biến</span>
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-terminal"></i></div>
+                        <div class="highlight-text">
+                            <strong>Nhật Ký Giám Sát Realtime</strong>
+                            <span>Theo dõi toàn bộ lịch sử truy cập và vận hành qua luồng Security Audit Logs.</span>
+                        </div>
                     </div>
                 </div>
-                <div class="error-message">Mật khẩu không đáp ứng các yêu cầu</div>
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="confirmPassword">Xác nhận mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="confirmPassword" 
-                    name="confirmPassword" 
-                    placeholder="Nhập lại mật khẩu"
-                    autocomplete="new-password"
-                    required
-                >
-                <div class="error-message">Mật khẩu xác nhận không khớp</div>
+        <!-- Right Side: Register Form -->
+        <div class="auth-form-side">
+            <div class="auth-container" style="max-width: 440px;">
+                <h2>Đăng ký tài khoản</h2>
+                <p>Khởi tạo kho lưu trữ ảnh bảo mật riêng của bạn</p>
+
+                <div id="alertMessage" class="alert"></div>
+
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="username">Tên đăng nhập</label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            placeholder="Nhập tên tài khoản (3-50 ký tự)"
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="50"
+                            required
+                        >
+                        <div class="error-message">Tên đăng nhập phải từ 3-50 ký tự</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Địa chỉ Email</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="example@domain.com"
+                            autocomplete="email"
+                            required
+                        >
+                        <div class="error-message">Vui lòng nhập email hợp lệ</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fullName">Họ tên</label>
+                        <input 
+                            type="text" 
+                            id="fullName" 
+                            name="fullName" 
+                            placeholder="Nhập họ và tên (tùy chọn)"
+                            autocomplete="name"
+                            maxlength="100"
+                        >
+                        <div class="error-message">Họ tên không hợp lệ</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Mật khẩu</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Nhập mật khẩu an toàn"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <div class="password-requirements">
+                            <div class="requirement" id="req-length">
+                                <div class="requirement-icon"><i class="fa-solid fa-check"></i></div>
+                                <span>Mật khẩu tối thiểu 8 ký tự</span>
+                            </div>
+                            <div class="requirement" id="req-uppercase">
+                                <div class="requirement-icon"><i class="fa-solid fa-check"></i></div>
+                                <span>Có chữ viết hoa (A-Z)</span>
+                            </div>
+                            <div class="requirement" id="req-lowercase">
+                                <div class="requirement-icon"><i class="fa-solid fa-check"></i></div>
+                                <span>Có chữ viết thường (a-z)</span>
+                            </div>
+                            <div class="requirement" id="req-number">
+                                <div class="requirement-icon"><i class="fa-solid fa-check"></i></div>
+                                <span>Có ít nhất 1 chữ số (0-9)</span>
+                            </div>
+                            <div class="requirement" id="req-common">
+                                <div class="requirement-icon"><i class="fa-solid fa-check"></i></div>
+                                <span>Không trùng mật khẩu phổ biến</span>
+                            </div>
+                        </div>
+                        <div class="error-message">Mật khẩu không đáp ứng các yêu cầu</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Xác nhận mật khẩu</label>
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            name="confirmPassword" 
+                            placeholder="Nhập lại mật khẩu để xác nhận"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <div class="error-message">Mật khẩu xác nhận không khớp</div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span id="btnText"><i class="fa-solid fa-user-plus" style="margin-right: 6px;"></i> Đăng Ký</span>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    Đã có tài khoản? <a href="login.html">Đăng nhập</a>
+                </div>
             </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn">
-                <span id="btnText">Đăng Ký</span>
-            </button>
-        </form>
-
-        <div class="auth-footer">
-            Đã có tài khoản? <a href="login.html">Đăng nhập</a>
         </div>
     </div>
 
     <script src="js/auth.js"></script>
     <script>
-        // Validate password requirements
         const passwordInput = document.getElementById('password');
         const commonPasswords = new Set([
             'password',
@@ -331,7 +181,6 @@
         
         passwordInput.addEventListener('input', () => {
             const password = passwordInput.value;
-            
             validatePasswordRequirement('req-length', password.length >= 8);
             validatePasswordRequirement('req-uppercase', /[A-Z]/.test(password));
             validatePasswordRequirement('req-lowercase', /[a-z]/.test(password));
@@ -348,7 +197,6 @@
             }
         }
 
-        // Xử lý đăng ký
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -372,7 +220,6 @@
 
             let isValid = true;
 
-            // Validate username
             if (username.length < 3 || username.length > 50) {
                 showFieldError('username', 'Tên đăng nhập phải từ 3-50 ký tự');
                 isValid = false;
@@ -380,7 +227,6 @@
                 clearFieldError('username');
             }
 
-            // Validate email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 showFieldError('email', 'Email không hợp lệ');
@@ -389,7 +235,6 @@
                 clearFieldError('email');
             }
 
-            // Validate password
             if (!validatePassword(password)) {
                 showFieldError('password', 'Mật khẩu không đáp ứng các yêu cầu');
                 isValid = false;
@@ -397,7 +242,6 @@
                 clearFieldError('password');
             }
 
-            // Validate confirm password
             if (password !== confirmPassword) {
                 showFieldError('confirmPassword', 'Mật khẩu xác nhận không khớp');
                 isValid = false;
@@ -453,7 +297,6 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Lưu token nếu backend tự động đăng nhập sau khi đăng ký
                     if (data.token) {
                         saveToken(data.token, data.user.username, data.user.id);
                         showAlert('Đăng ký thành công! Chuyển hướng...', 'success');
@@ -474,7 +317,7 @@
                 showAlert('Lỗi kết nối: ' + error.message, 'error');
             } finally {
                 submitBtn.disabled = false;
-                btnText.textContent = 'Đăng Ký';
+                btnText.innerHTML = '<i class="fa-solid fa-user-plus" style="margin-right: 6px;"></i> Đăng Ký';
             }
         }
 
@@ -484,7 +327,6 @@
             alertDiv.className = `alert ${type} show`;
         }
 
-        // Kiểm tra nếu user đã đăng nhập
         if (localStorage.getItem('token')) {
             window.location.href = 'files.html';
         }

@@ -2,17 +2,12 @@
 // File Management API & UI
 // ==========================================
 
-const API_BASE = window.location.protocol === 'file:'
-    ? 'http://localhost:5000/api'
-    : `${window.location.origin}/api`;
+let currentFilesCache = [];
 
-/**
- * Upload file
- */
 async function uploadFile(file, isPublic = false, ttlSeconds = 3600, downloadLimit = 3) {
     const token = getToken();
     if (!token) {
-        showAlert('Phiên đăng nhập hết hạn', 'error');
+        showAlert('Session expired. Please sign in again.', 'error');
         return null;
     }
 
@@ -34,25 +29,22 @@ async function uploadFile(file, isPublic = false, ttlSeconds = 3600, downloadLim
         if (response.ok) {
             const data = await response.json();
             return data.file;
-        } else {
-            const error = await response.json();
-            showAlert(error.error || error.message || 'Upload thất bại', 'error');
-            return null;
         }
+
+        const error = await response.json();
+        showAlert(error.error || error.message || 'Upload failed.', 'error');
+        return null;
     } catch (error) {
         console.error('Upload error:', error);
-        showAlert('Lỗi upload: ' + error.message, 'error');
+        showAlert('Upload error: ' + error.message, 'error');
         return null;
     }
 }
 
-/**
- * Get user files and public files
- */
 async function getFiles() {
     const token = getToken();
     if (!token) {
-        showAlert('Phiên đăng nhập hết hạn', 'error');
+        showAlert('Session expired. Please sign in again.', 'error');
         return [];
     }
 
@@ -68,29 +60,28 @@ async function getFiles() {
         if (response.ok) {
             const data = await response.json();
             return data.files || [];
-        } else if (response.status === 401) {
+        }
+
+        if (response.status === 401) {
             showSessionExpiredAlert();
             return [];
-        } else {
-            const error = await response.json();
-            console.error('Get files error:', error);
-            showAlert(error.error || error.message || 'Tải danh sách file thất bại', 'error');
-            return [];
         }
+
+        const error = await response.json();
+        console.error('Get files error:', error);
+        showAlert(error.error || error.message || 'Failed to load files.', 'error');
+        return [];
     } catch (error) {
         console.error('Get files error:', error);
-        showAlert('Lỗi tải danh sách file: ' + error.message, 'error');
+        showAlert('File list error: ' + error.message, 'error');
         return [];
     }
 }
 
-/**
- * Delete file
- */
 async function deleteFile(fileId) {
     const token = getToken();
     if (!token) {
-        showAlert('Phiên đăng nhập hết hạn', 'error');
+        showAlert('Session expired. Please sign in again.', 'error');
         return false;
     }
 
@@ -103,30 +94,27 @@ async function deleteFile(fileId) {
             }
         });
 
-        if (response.ok) {
-            return true;
-        } else if (response.status === 401) {
+        if (response.ok) return true;
+
+        if (response.status === 401) {
             showSessionExpiredAlert();
             return false;
-        } else {
-            const error = await response.json();
-            showAlert(error.message || 'Xóa file thất bại', 'error');
-            return false;
         }
+
+        const error = await response.json();
+        showAlert(error.message || 'Delete failed.', 'error');
+        return false;
     } catch (error) {
         console.error('Delete error:', error);
-        showAlert('Lỗi xóa file: ' + error.message, 'error');
+        showAlert('Delete error: ' + error.message, 'error');
         return false;
     }
 }
 
-/**
- * Toggle file public/private
- */
 async function toggleFilePermissions(fileId, isPublic) {
     const token = getToken();
     if (!token) {
-        showAlert('Phiên đăng nhập hết hạn', 'error');
+        showAlert('Session expired. Please sign in again.', 'error');
         return false;
     }
 
@@ -142,198 +130,149 @@ async function toggleFilePermissions(fileId, isPublic) {
             })
         });
 
-        if (response.ok) {
-            return true;
-        } else if (response.status === 401) {
+        if (response.ok) return true;
+
+        if (response.status === 401) {
             showSessionExpiredAlert();
             return false;
-        } else {
-            const error = await response.json();
-            showAlert(error.message || 'Cập nhật quyền thất bại', 'error');
-            return false;
         }
+
+        const error = await response.json();
+        showAlert(error.message || 'Permission update failed.', 'error');
+        return false;
     } catch (error) {
         console.error('Toggle permissions error:', error);
-        showAlert('Lỗi cập nhật quyền: ' + error.message, 'error');
+        showAlert('Permission update error: ' + error.message, 'error');
         return false;
     }
 }
 
-/**
- * Get file info (for download)
- */
-async function getFileInfo(fileId) {
-    const token = getToken();
-    if (!token) {
-        return null;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/files/${fileId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.ok) {
-            return await response.json();
-        }
-        return null;
-    } catch (error) {
-        console.error('Get file info error:', error);
-        return null;
-    }
-}
-
-/**
- * Display file list
- */
 async function displayFileList(files = null) {
-    if (!files) {
-        files = await getFiles();
-    }
-    const user = getCurrentUser();
-    
-    if (!files || files.length === 0) {
-        const emptyMsg = document.getElementById('emptyMessage');
-        if (emptyMsg) {
-            emptyMsg.style.display = 'block';
-        }
-        const container = document.getElementById('fileListContainer');
-        if (container) {
-            container.innerHTML = '';
-        }
-        return;
-    }
-
     const container = document.getElementById('fileListContainer');
     if (!container) return;
 
+    if (!files) {
+        files = await getFiles();
+    }
+    currentFilesCache = files || [];
+
+    const emptyMsg = document.getElementById('emptyMessage');
+    if (!files || files.length === 0) {
+        if (emptyMsg) emptyMsg.style.display = 'block';
+        container.innerHTML = '';
+        return;
+    }
+
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    const user = getCurrentUser();
     container.innerHTML = '';
 
-    files.forEach(file => {
+    files.forEach((file) => {
         const isOwner = String(file.user_id) === String(user.userId);
-        const fileCard = createFileCard(file, isOwner);
-        container.appendChild(fileCard);
+        container.appendChild(createFileCard(file, isOwner));
     });
 }
 
-/**
- * Create file card element
- */
 function createFileCard(file, isOwner) {
     const card = document.createElement('div');
-    card.className = 'file-card';
-    card.style.cssText = `
-        background: white;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-left: 4px solid ${isOwner ? '#4CAF50' : '#2196F3'};
-    `;
+    const fileName = file.original_name || file.filename || 'Untitled file';
+    const iconClass = getFileIcon(fileName);
+    const statusClass = file.is_public ? 'public' : 'private';
+    const statusText = file.is_public ? 'Công khai' : 'Riêng tư';
+    const downloadsLeft = file.downloads_left ?? 0;
+    const downloadUrl = `${window.location.origin}/api/files/${file.id}`;
+    card.className = 'file-card vault-file-row';
+    card.dataset.name = fileName.toLowerCase();
+    card.dataset.visibility = file.is_public ? 'public' : 'private';
+    card.dataset.expiring = isExpiringSoon(file.expires_at) ? 'true' : 'false';
 
-    const fileInfo = document.createElement('div');
-    fileInfo.style.cssText = 'flex: 1; margin-right: 20px;';
-    fileInfo.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fa-solid fa-file" style="font-size: 24px; color: #666;"></i>
-            <div style="flex: 1;">
-                <div style="font-weight: 600; color: #333; margin-bottom: 4px;">
-                    ${escapeHtml(file.original_name || file.filename)}
-                </div>
-                <div style="font-size: 12px; color: #999;">
+    card.innerHTML = `
+        <div class="file-card-info">
+            <div class="file-card-icon ${isOwner ? 'owner' : ''}">
+                <i class="fa-solid ${iconClass}"></i>
+            </div>
+            <div class="file-card-meta">
+                <div class="file-card-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</div>
+                <div class="file-card-details">
                     <span>${formatFileSize(file.file_size || file.size || 0)}</span>
-                    <span style="margin: 0 8px;">•</span>
+                    <span class="file-card-divider">-</span>
                     <span>${formatDate(file.upload_date || file.created_at)}</span>
-                    <span style="margin: 0 8px;">•</span>
-                    <span>${file.is_public ? '🌍 Công khai' : '🔒 Riêng tư'}</span>
-                    <span style="margin: 0 8px;">•</span>
-                    <span>Còn ${file.downloads_left ?? '?'} lượt tải</span>
-                    <span style="margin: 0 8px;">•</span>
-                    <span>Hết hạn: ${formatDateTime(file.expires_at)}</span>
-                    ${isOwner ? '' : `<span style="margin: 0 8px;">•</span><span>👤 ${escapeHtml(file.owner_username || 'Unknown')}</span>`}
+                    ${isOwner ? '' : `
+                        <span class="file-card-divider">-</span>
+                        <span><i class="fa-solid fa-user" style="margin-right: 4px;"></i> ${escapeHtml(file.owner_username || 'Người chia sẻ')}</span>
+                    `}
                 </div>
             </div>
+        </div>
+        <div class="file-card-security">
+            <span class="status-badge ${statusClass}">
+                <i class="fa-solid ${file.is_public ? 'fa-unlock' : 'fa-lock'}"></i>
+                ${statusText}
+            </span>
+        </div>
+        <div class="file-card-policy">
+            ${renderExpiryBadge(file.expires_at)}
+            ${renderDownloadBadge(downloadsLeft)}
         </div>
     `;
 
     const actions = document.createElement('div');
-    actions.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+    actions.className = 'file-card-actions';
 
-    // Download button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'action-btn copy';
+    copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>';
+    copyBtn.title = 'Sao chép link';
+    copyBtn.onclick = async () => {
+        await copyToClipboard(downloadUrl);
+        showAlert('Đã sao chép link tải vào bộ nhớ tạm.', 'success');
+        if (typeof logAction === 'function') {
+            logAction('SHARE', `Copied link for ${file.id.substring(0, 8)}.`);
+        }
+    };
+    actions.appendChild(copyBtn);
+
     const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'action-btn download';
     downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
     downloadBtn.title = 'Tải xuống';
-    downloadBtn.style.cssText = `
-        padding: 8px 12px;
-        background: #2196F3;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background 0.3s;
-    `;
-    downloadBtn.onmouseover = () => downloadBtn.style.background = '#1976D2';
-    downloadBtn.onmouseout = () => downloadBtn.style.background = '#2196F3';
-    downloadBtn.onclick = () => downloadFile(file.id, file.original_name || file.filename);
+    downloadBtn.onclick = () => downloadFile(file.id, fileName);
     actions.appendChild(downloadBtn);
 
-    // Owner-only actions
     if (isOwner) {
-        // Toggle permission button
         const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'action-btn toggle';
         toggleBtn.innerHTML = file.is_public ? '<i class="fa-solid fa-lock-open"></i>' : '<i class="fa-solid fa-lock"></i>';
-        toggleBtn.title = file.is_public ? 'Chuyển về riêng tư' : 'Chuyển về công khai';
-        toggleBtn.style.cssText = `
-            padding: 8px 12px;
-            background: #FF9800;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s;
-        `;
-        toggleBtn.onmouseover = () => toggleBtn.style.background = '#F57C00';
-        toggleBtn.onmouseout = () => toggleBtn.style.background = '#FF9800';
+        toggleBtn.title = file.is_public ? 'Chuyển về riêng tư' : 'Chuyển sang công khai';
         toggleBtn.onclick = async () => {
             toggleBtn.disabled = true;
             const newStatus = !file.is_public;
             if (await toggleFilePermissions(file.id, newStatus)) {
                 file.is_public = newStatus;
-                toggleBtn.innerHTML = newStatus ? '<i class="fa-solid fa-lock-open"></i>' : '<i class="fa-solid fa-lock"></i>';
-                toggleBtn.title = newStatus ? 'Chuyển về riêng tư' : 'Chuyển về công khai';
-                showAlert(newStatus ? 'Đã chuyển về công khai' : 'Đã chuyển về riêng tư', 'success');
+                await displayFileList();
+                showAlert(newStatus ? 'File đã chuyển sang công khai.' : 'File đã chuyển sang riêng tư.', 'success');
+                if (typeof logAction === 'function') {
+                    logAction('POLICY', `Access changed for ${file.id.substring(0, 8)} to ${newStatus ? 'public' : 'private'}.`);
+                }
             }
             toggleBtn.disabled = false;
         };
         actions.appendChild(toggleBtn);
 
-        // Delete button
         const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn delete';
         deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         deleteBtn.title = 'Xóa file';
-        deleteBtn.style.cssText = `
-            padding: 8px 12px;
-            background: #f44336;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s;
-        `;
-        deleteBtn.onmouseover = () => deleteBtn.style.background = '#da190b';
-        deleteBtn.onmouseout = () => deleteBtn.style.background = '#f44336';
         deleteBtn.onclick = async () => {
-            if (confirm('Bạn chắc chắn muốn xóa file này?')) {
+            if (confirm('Xóa file này ngay bây giờ?')) {
                 deleteBtn.disabled = true;
                 if (await deleteFile(file.id)) {
                     card.remove();
-                    showAlert('File đã được xóa', 'success');
+                    showAlert('Đã xóa file.', 'success');
+                    await displayFileList();
+                    if (typeof logAction === 'function') {
+                        logAction('DELETE', `Deleted file ${file.id.substring(0, 8)}.`);
+                    }
                 } else {
                     deleteBtn.disabled = false;
                 }
@@ -342,18 +281,99 @@ function createFileCard(file, isOwner) {
         actions.appendChild(deleteBtn);
     }
 
-    card.appendChild(fileInfo);
     card.appendChild(actions);
     return card;
 }
 
-/**
- * Download file
- */
+function getFileIcon(fileName) {
+    const ext = fileName.split('.').pop().toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'fa-file-image';
+    if (ext === 'pdf') return 'fa-file-pdf';
+    if (ext === 'txt') return 'fa-file-lines';
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'fa-file-zipper';
+    return 'fa-file';
+}
+
+function renderDownloadBadge(downloadsLeft) {
+    if (downloadsLeft <= 1) {
+        return `<span class="status-badge danger"><i class="fa-solid fa-circle-down"></i> ${downloadsLeft} lượt</span>`;
+    }
+    if (downloadsLeft <= 3) {
+        return `<span class="status-badge warning"><i class="fa-solid fa-circle-down"></i> ${downloadsLeft} lượt</span>`;
+    }
+    return `<span class="status-badge private"><i class="fa-solid fa-circle-down"></i> ${downloadsLeft} lượt</span>`;
+}
+
+function renderExpiryBadge(dateString) {
+    if (!dateString) {
+        return '<span class="status-badge private"><i class="fa-solid fa-clock"></i> Không hết hạn</span>';
+    }
+
+    const expiresAt = new Date(dateString);
+    const msLeft = expiresAt - new Date();
+
+    if (Number.isNaN(expiresAt.getTime())) {
+        return '<span class="status-badge private"><i class="fa-solid fa-clock"></i> Không rõ</span>';
+    }
+    if (msLeft < 0) {
+        return '<span class="status-badge danger"><i class="fa-solid fa-triangle-exclamation"></i> Đã hết hạn</span>';
+    }
+    if (msLeft < 30 * 60 * 1000) {
+        return `<span class="status-badge warning countdown-badge" data-expires-at="${escapeHtml(dateString)}"><i class="fa-solid fa-clock"></i> ${formatTimeLeft(msLeft)}</span>`;
+    }
+    return `<span class="status-badge private countdown-badge" data-expires-at="${escapeHtml(dateString)}"><i class="fa-solid fa-clock"></i> ${formatTimeLeft(msLeft)}</span>`;
+}
+
+function isExpiringSoon(dateString) {
+    if (!dateString) return false;
+    const msLeft = new Date(dateString) - new Date();
+    return msLeft > 0 && msLeft < 60 * 60 * 1000;
+}
+
+function formatTimeLeft(msLeft) {
+    if (msLeft <= 0) return 'Đã hết hạn';
+    const totalSeconds = Math.floor(msLeft / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (days > 0) return `${days} ngày ${hours} giờ`;
+    if (hours > 0) return `${hours} giờ ${minutes} phút`;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function refreshCountdownBadges() {
+    document.querySelectorAll('.countdown-badge').forEach((badge) => {
+        const expiresAt = badge.dataset.expiresAt;
+        const msLeft = new Date(expiresAt) - new Date();
+        badge.classList.toggle('warning', msLeft > 0 && msLeft < 30 * 60 * 1000);
+        badge.classList.toggle('danger', msLeft <= 0);
+        badge.innerHTML = `<i class="fa-solid ${msLeft <= 0 ? 'fa-triangle-exclamation' : 'fa-clock'}"></i> ${formatTimeLeft(msLeft)}`;
+    });
+}
+
+async function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+}
+
 async function downloadFile(fileId, filename) {
     const token = getToken();
     if (!token) {
-        showAlert('Phiên đăng nhập hết hạn', 'error');
+        showAlert('Session expired. Please sign in again.', 'error');
         return;
     }
 
@@ -367,7 +387,7 @@ async function downloadFile(fileId, filename) {
 
         if (!response.ok) {
             const error = await response.json();
-            showAlert(error.error || 'Tải file thất bại', 'error');
+            showAlert(error.error || 'Tải xuống thất bại.', 'error');
             await displayFileList();
             return;
         }
@@ -382,99 +402,89 @@ async function downloadFile(fileId, filename) {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
         await displayFileList();
+
+        if (typeof logAction === 'function') {
+            logAction('DOWNLOAD', `Downloaded file: ${filename}`);
+        }
     } catch (error) {
         console.error('Download error:', error);
-        showAlert('Lỗi tải file: ' + error.message, 'error');
+        showAlert('Lỗi tải xuống: ' + error.message, 'error');
     }
 }
 
-/**
- * Utility: Format file size
- */
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
-/**
- * Utility: Format date
- */
 function formatDate(dateString) {
-    if (!dateString) return 'Không rõ';
+    if (!dateString) return 'Unknown';
     const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return 'Không rõ';
-    const now = new Date();
-    const diffMs = now - date;
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+
+    const diffMs = new Date() - date;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'Vừa xong';
-    if (diffMins < 60) return `${diffMins} phút trước`;
-    if (diffHours < 24) return `${diffHours} giờ trước`;
-    if (diffDays < 7) return `${diffDays} ngày trước`;
-    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hr ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+
     return date.toLocaleDateString('vi-VN');
 }
 
-/**
- * Utility: Format absolute date time
- */
 function formatDateTime(dateString) {
-    if (!dateString) return 'Không rõ';
+    if (!dateString) return 'Unknown';
     const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return 'Không rõ';
+    if (Number.isNaN(date.getTime())) return 'Unknown';
     return date.toLocaleString('vi-VN');
 }
 
-/**
- * Utility: Escape HTML
- */
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-/**
- * Show alert
- */
 function showAlert(message, type = 'info') {
-    const alert = document.createElement('div');
-    alert.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 16px 20px;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10000;
-        font-weight: 500;
-        max-width: 400px;
-        word-wrap: break-word;
+    const container = document.getElementById('toastContainer');
+    if (!container) {
+        let fallbackContainer = document.getElementById('fallbackToastContainer');
+        if (!fallbackContainer) {
+            fallbackContainer = document.createElement('div');
+            fallbackContainer.id = 'fallbackToastContainer';
+            fallbackContainer.className = 'toast-container';
+            document.body.appendChild(fallbackContainer);
+        }
+        createToast(fallbackContainer, message, type);
+        return;
+    }
+    createToast(container, message, type);
+}
+
+function createToast(container, message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+
+    let icon = 'fa-info-circle';
+    if (type === 'success') icon = 'fa-check-circle';
+    if (type === 'error') icon = 'fa-exclamation-circle';
+
+    toast.innerHTML = `
+        <i class="fa-solid ${icon} toast-icon"></i>
+        <div class="toast-message">${escapeHtml(message)}</div>
     `;
 
-    if (type === 'error') {
-        alert.style.backgroundColor = '#ffebee';
-        alert.style.color = '#c62828';
-        alert.style.borderLeft = '4px solid #d32f2f';
-    } else if (type === 'success') {
-        alert.style.backgroundColor = '#e8f5e9';
-        alert.style.color = '#2e7d32';
-        alert.style.borderLeft = '4px solid #4CAF50';
-    } else {
-        alert.style.backgroundColor = '#e3f2fd';
-        alert.style.color = '#1565c0';
-        alert.style.borderLeft = '4px solid #2196F3';
-    }
-
-    alert.textContent = message;
-    document.body.appendChild(alert);
+    container.appendChild(toast);
 
     setTimeout(() => {
-        alert.remove();
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
     }, 4000);
 }

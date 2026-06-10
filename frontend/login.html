@@ -3,198 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Nhập - FileShare System</title>
+    <title>Đăng Nhập - SecuShare</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <style>
-        .auth-container {
-            max-width: 400px;
-            margin: 50px auto;
-            padding: 30px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-header h1 {
-            color: #333;
-            font-size: 28px;
-            margin: 0;
-        }
-
-        .auth-header p {
-            color: #666;
-            margin: 10px 0 0 0;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            box-sizing: border-box;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-        }
-
-        .error-message {
-            color: #d32f2f;
-            font-size: 13px;
-            margin-top: 3px;
-            display: none;
-        }
-
-        .form-group.error input {
-            border-color: #d32f2f;
-        }
-
-        .form-group.error .error-message {
-            display: block;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-        }
-
-        .submit-btn:hover {
-            background-color: #45a049;
-        }
-
-        .submit-btn:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-        }
-
-        .auth-footer a {
-            color: #4CAF50;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .auth-footer a:hover {
-            text-decoration: underline;
-        }
-
-        .alert {
-            padding: 12px 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .alert.error {
-            background-color: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #d32f2f;
-        }
-
-        .alert.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border-left: 4px solid #4CAF50;
-        }
-
-        .alert.show {
-            display: block;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #4CAF50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 5px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-header">
-            <h1>🔒 Đăng Nhập</h1>
-            <p>Truy cập hệ thống chia sẻ file</p>
+    <div class="auth-split-wrapper">
+        <!-- Left Side: SecuShare identity + highlights -->
+        <div class="auth-brand-side">
+            <div class="brand-side-content">
+                <div class="brand-side-logo">
+                    <i class="fa-solid fa-shield-halved"></i> SecuShare
+                </div>
+                <h2>Distributed Image Storage Vault</h2>
+                <p>Hệ thống lưu trữ và chia sẻ hình ảnh phân tán an toàn tuyệt đối với cơ chế tự hủy và mã hóa mật mật.</p>
+                
+                <div class="security-highlights">
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="highlight-text">
+                            <strong>Mã Hóa Đầu Cuối (E2E)</strong>
+                            <span>Dữ liệu ảnh được mã hóa an toàn trước khi lưu trữ.</span>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="highlight-text">
+                            <strong>Tự Động Hủy Tài Nguyên (TTL)</strong>
+                            <span>Thiết lập thời gian tự hủy và giới hạn số lượt tải cho mỗi tệp tin.</span>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-server"></i></div>
+                        <div class="highlight-text">
+                            <strong>Lưu Trữ Phân Tán Đa Node</strong>
+                            <span>Dữ liệu được nhân bản và lưu trữ chéo trên cụm 3 Storage Nodes độc lập.</span>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon"><i class="fa-solid fa-terminal"></i></div>
+                        <div class="highlight-text">
+                            <strong>Nhật Ký Giám Sát Realtime</strong>
+                            <span>Theo dõi toàn bộ lịch sử truy cập và vận hành qua luồng Security Audit Logs.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="alertMessage" class="alert"></div>
+        <!-- Right Side: Login Form -->
+        <div class="auth-form-side">
+            <div class="auth-container">
+                <h2>Xin chào quay trở lại</h2>
+                <p>Vui lòng đăng nhập tài khoản SecuShare của bạn</p>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">Tên đăng nhập</label>
-                <input 
-                    type="text" 
-                    id="username" 
-                    name="username" 
-                    placeholder="Nhập tên đăng nhập"
-                    autocomplete="username"
-                    required
-                >
-                <div class="error-message">Vui lòng nhập tên đăng nhập</div>
+                <div id="alertMessage" class="alert"></div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Tên đăng nhập</label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            placeholder="Nhập tên tài khoản"
+                            autocomplete="username"
+                            required
+                        >
+                        <div class="error-message">Vui lòng nhập tên đăng nhập</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Mật khẩu</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Nhập mật khẩu"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <div class="error-message">Vui lòng nhập mật khẩu</div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span id="btnText"><i class="fa-solid fa-arrow-right-to-bracket" style="margin-right: 6px;"></i> Đăng Nhập</span>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    Chưa có tài khoản? <a href="register.html">Đăng ký ngay</a>
+                </div>
             </div>
-
-            <div class="form-group">
-                <label for="password">Mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Nhập mật khẩu"
-                    autocomplete="current-password"
-                    required
-                >
-                <div class="error-message">Vui lòng nhập mật khẩu</div>
-            </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn">
-                <span id="btnText">Đăng Nhập</span>
-            </button>
-        </form>
-
-        <div class="auth-footer">
-            Chưa có tài khoản? <a href="register.html">Đăng ký ngay</a>
         </div>
     </div>
 
@@ -204,7 +104,6 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Validate
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
 
@@ -213,7 +112,6 @@
                 return;
             }
 
-            // Gọi API đăng nhập
             await loginUser(username, password);
         });
 
@@ -222,7 +120,7 @@
             const btnText = document.getElementById('btnText');
             
             submitBtn.disabled = true;
-            btnText.innerHTML = '<span class="loading"></span>Đang xử lý...';
+            btnText.innerHTML = '<span class="loading"></span>Đang đăng nhập...';
 
             try {
                 const response = await fetch(`${AUTH_API_BASE}/auth/login`, {
@@ -239,12 +137,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Lưu token với expiry time
                     saveToken(data.token, data.user.username, data.user.id);
-
                     showAlert('Đăng nhập thành công! Chuyển hướng...', 'success');
-                    
-                    // Chuyển hướng sau 1 giây
                     setTimeout(() => {
                         window.location.href = 'files.html';
                     }, 1000);
@@ -256,7 +150,7 @@
                 showAlert('Lỗi kết nối: ' + error.message, 'error');
             } finally {
                 submitBtn.disabled = false;
-                btnText.textContent = 'Đăng Nhập';
+                btnText.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket" style="margin-right: 6px;"></i> Đăng Nhập';
             }
         }
 
@@ -272,7 +166,6 @@
             }
         }
 
-        // Kiểm tra nếu user đã đăng nhập
         if (localStorage.getItem('token')) {
             window.location.href = 'files.html';
         }

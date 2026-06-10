@@ -260,6 +260,11 @@ def create_app():
     def js_files(filename):
         """Serve JS files from js/ directory"""
         return send_from_directory(os.path.join(frontend_dir, 'js'), filename)
+
+    @app.route('/css/<path:filename>', methods=['GET'])
+    def css_files(filename):
+        """Serve CSS files from css/ directory"""
+        return send_from_directory(os.path.join(frontend_dir, 'css'), filename)
     
     # Storage files route
     storage_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'storage')

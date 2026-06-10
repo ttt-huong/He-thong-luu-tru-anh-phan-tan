@@ -137,21 +137,15 @@ function logout() {
  * Show session expired alert
  */
 function showSessionExpiredAlert() {
+    const container = document.getElementById('toastContainer') || document.body;
     const alert = document.createElement('div');
-    alert.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #ff9800;
-        color: white;
-        padding: 16px 20px;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10000;
-        font-weight: 500;
+    alert.className = 'toast-notification error';
+    alert.style.cssText = 'position: fixed; top: 24px; right: 24px; z-index: 10000; max-width: 380px; width: calc(100% - 48px);';
+    alert.innerHTML = `
+        <i class="fa-solid fa-clock-rotate-left toast-icon" style="color: var(--color-danger);"></i>
+        <div class="toast-message">Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.</div>
     `;
-    alert.textContent = 'Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.';
-    document.body.appendChild(alert);
+    container.appendChild(alert);
     
     setTimeout(() => {
         alert.remove();
