@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let activeVaultFilter = 'all';
+const DEMO_STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
 
 function hydrateUserProfile() {
     const user = getCurrentUser();
@@ -243,6 +244,7 @@ async function loadFileList() {
         if (fileListContainer) fileListContainer.innerHTML = '';
         setText('ownFileCount', '0');
         setText('publicFileCount', '0');
+        updateStorageUsage([]);
         return;
     }
 
@@ -260,9 +262,27 @@ async function loadFileList() {
 
     setText('ownFileCount', ownFileCount);
     setText('publicFileCount', publicFileCount);
+    updateStorageUsage(files.filter((file) => String(file.user_id) === String(user.userId)));
 
     await displayFileList(files);
     applyVaultFilters();
+}
+
+function updateStorageUsage(ownFiles) {
+    const totalBytes = (ownFiles || []).reduce((sum, file) => {
+        return sum + Number(file.file_size || file.size || 0);
+    }, 0);
+    const percent = Math.min(100, Math.round((totalBytes / DEMO_STORAGE_LIMIT_BYTES) * 100));
+    const ring = document.getElementById('capacityRing');
+
+    setText('storageUsedText', formatFileSize(totalBytes));
+    setText('storageLimitText', formatFileSize(DEMO_STORAGE_LIMIT_BYTES));
+    setText('storagePercentText', `${percent}%`);
+
+    if (ring) {
+        ring.style.setProperty('--capacity-percent', percent);
+        ring.setAttribute('aria-label', `${percent} percent storage used`);
+    }
 }
 
 async function loadAuditLogs() {

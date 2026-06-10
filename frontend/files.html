@@ -112,16 +112,16 @@
                 <div class="security-dashboard-grid">
                     <article class="security-panel vault-capacity-panel">
                         <div>
-                            <p class="panel-eyebrow">Dung lượng mô phỏng</p>
-                            <h2>130 GB / 260 GB</h2>
-                            <p>File được phân phối qua gateway và các storage node.</p>
+                            <p class="panel-eyebrow">Dung lượng đã lưu</p>
+                            <h2><span id="storageUsedText">0 B</span> / <span id="storageLimitText">10 MB</span></h2>
+                            <p>Tính theo tổng dung lượng file còn hiệu lực của tài khoản hiện tại.</p>
                         </div>
-                        <div class="capacity-ring" aria-label="50 percent storage used">
+                        <div class="capacity-ring" id="capacityRing" aria-label="0 percent storage used">
                             <svg viewBox="0 0 64 64">
                                 <circle cx="32" cy="32" r="24"></circle>
                                 <circle cx="32" cy="32" r="24" class="capacity-ring-fill"></circle>
                             </svg>
-                            <strong>50%</strong>
+                            <strong id="storagePercentText">0%</strong>
                         </div>
                     </article>
 

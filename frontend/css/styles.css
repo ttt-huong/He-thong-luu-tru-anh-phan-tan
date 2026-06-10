@@ -1761,6 +1761,7 @@ body.auth-pending {
     position: relative;
     width: 92px;
     height: 92px;
+    --capacity-percent: 0;
 }
 
 .capacity-ring svg {
@@ -1778,8 +1779,9 @@ body.auth-pending {
 .capacity-ring .capacity-ring-fill {
     stroke: var(--accent-blue);
     stroke-dasharray: 151;
-    stroke-dashoffset: 75.5;
+    stroke-dashoffset: calc(151 - (151 * var(--capacity-percent) / 100));
     stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
 }
 
 .capacity-ring strong {
