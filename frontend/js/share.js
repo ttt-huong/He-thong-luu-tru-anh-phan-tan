@@ -104,7 +104,7 @@ function updateExpiresIn(dateString) {
         return;
     }
 
-    const msLeft = new Date(dateString) - new Date();
+    const msLeft = parseApiDate(dateString) - new Date();
     element.textContent = formatTimeLeft(msLeft);
 }
 
@@ -127,6 +127,12 @@ function formatFileSize(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
     return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
+}
+
+function parseApiDate(dateString) {
+    if (!dateString) return new Date(NaN);
+    const hasTimezone = /Z$|[+-]\d{2}:\d{2}$/.test(dateString);
+    return new Date(hasTimezone ? dateString : `${dateString}Z`);
 }
 
 function getFileIcon(fileName) {

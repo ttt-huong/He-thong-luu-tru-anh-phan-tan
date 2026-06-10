@@ -11,6 +11,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 Base = declarative_base()
 
 
+def utc_isoformat(value):
+    """Serialize naive UTC datetimes with a timezone marker for browsers."""
+    if not value:
+        return None
+    text = value.isoformat()
+    if value.tzinfo is None:
+        return f'{text}Z'
+    return text
+
+
 class User(Base):
     """User model for authentication"""
     __tablename__ = 'users'
@@ -44,7 +54,7 @@ class User(Base):
             'email': self.email,
             'full_name': self.full_name,
             'is_active': self.is_active,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': utc_isoformat(self.created_at)
         }
 
     def __repr__(self):
@@ -104,15 +114,15 @@ class File(Base):
             'primary_node': self.primary_node,
             'replica_nodes': self.replica_nodes,
             'storage_node': self.storage_node,
-            'upload_date': self.upload_date.isoformat() if self.upload_date else None,
+            'upload_date': utc_isoformat(self.upload_date),
             'download_count': self.download_count,
             'download_limit': self.download_limit,
             'downloads_left': self.downloads_left,
             'checksum': self.checksum,
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'expires_at': utc_isoformat(self.expires_at),
             'is_deleted': self.is_deleted,
             'deleted': self.deleted,
-            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None
+            'deleted_at': utc_isoformat(self.deleted_at)
         }
         if include_path:
             data['file_path'] = self.file_path
@@ -145,7 +155,7 @@ class FileAccessLog(Base):
             'user_id': self.user_id,
             'file_id': self.file_id,
             'action': self.action,
-            'access_date': self.access_date.isoformat() if self.access_date else None,
+            'access_date': utc_isoformat(self.access_date),
             'ip_address': self.ip_address,
             'details': self.details
         }
@@ -164,7 +174,7 @@ class FileAccessLog(Base):
             'user_id': self.user_id,
             'file_id': self.file_id,
             'action': self.action,
-            'access_date': self.access_date.isoformat() if self.access_date else None,
+            'access_date': utc_isoformat(self.access_date),
             'ip_address': self.ip_address,
             'details': self.details
         }

@@ -335,7 +335,7 @@ function renderExpiryBadge(dateString) {
         return '<span class="status-badge private"><i class="fa-solid fa-clock"></i> Không hết hạn</span>';
     }
 
-    const expiresAt = new Date(dateString);
+    const expiresAt = parseApiDate(dateString);
     const msLeft = expiresAt - new Date();
 
     if (Number.isNaN(expiresAt.getTime())) {
@@ -352,13 +352,13 @@ function renderExpiryBadge(dateString) {
 
 function isExpiringSoon(dateString) {
     if (!dateString) return false;
-    const msLeft = new Date(dateString) - new Date();
+    const msLeft = parseApiDate(dateString) - new Date();
     return msLeft > 0 && msLeft < 60 * 60 * 1000;
 }
 
 function hasExpired(dateString) {
     if (!dateString) return false;
-    const expiresAt = new Date(dateString);
+    const expiresAt = parseApiDate(dateString);
     return !Number.isNaN(expiresAt.getTime()) && expiresAt <= new Date();
 }
 
@@ -380,7 +380,7 @@ function refreshCountdownBadges() {
 
     document.querySelectorAll('.countdown-badge').forEach((badge) => {
         const expiresAt = badge.dataset.expiresAt;
-        const msLeft = new Date(expiresAt) - new Date();
+        const msLeft = parseApiDate(expiresAt) - new Date();
         const wasExpired = badge.dataset.expired === 'true';
         const isExpired = msLeft <= 0;
         badge.classList.toggle('warning', msLeft > 0 && msLeft < 30 * 60 * 1000);
@@ -477,7 +477,7 @@ function formatFileSize(bytes) {
 
 function formatDate(dateString) {
     if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
+    const date = parseApiDate(dateString);
     if (Number.isNaN(date.getTime())) return 'Unknown';
 
     const diffMs = new Date() - date;
@@ -495,9 +495,15 @@ function formatDate(dateString) {
 
 function formatDateTime(dateString) {
     if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
+    const date = parseApiDate(dateString);
     if (Number.isNaN(date.getTime())) return 'Unknown';
     return date.toLocaleString('vi-VN');
+}
+
+function parseApiDate(dateString) {
+    if (!dateString) return new Date(NaN);
+    const hasTimezone = /Z$|[+-]\d{2}:\d{2}$/.test(dateString);
+    return new Date(hasTimezone ? dateString : `${dateString}Z`);
 }
 
 function escapeHtml(text) {
