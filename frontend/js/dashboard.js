@@ -311,14 +311,7 @@ async function loadAuditLogs() {
             return;
         }
 
-        auditRows.innerHTML = logs.map((log) => `
-            <div class="audit-table-row">
-                <span>${escapeHtml(formatDateTime(log.access_date))}</span>
-                <strong>${escapeHtml((log.action || 'event').toUpperCase())}</strong>
-                <span>${escapeHtml(shortFileId(log.file_id))}</span>
-                <em>${escapeHtml(formatAuditStatus(log.action))}</em>
-            </div>
-        `).join('');
+        auditRows.innerHTML = logs.map(renderAuditRow).join('');
     } catch (error) {
         console.error('Audit load error:', error);
     }
@@ -329,11 +322,67 @@ function shortFileId(fileId) {
     return `File ${String(fileId).substring(0, 8)}`;
 }
 
-function formatAuditStatus(action) {
-    if (!action) return 'Recorded';
-    if (action.includes('denied')) return 'Denied';
-    if (action.includes('expired')) return 'Expired';
-    return 'Success';
+function renderAuditRow(log) {
+    const meta = getAuditMeta(log.action);
+    const actor = log.user_id ? 'Nguoi dung da dang nhap' : 'Khach mo link public';
+    const fileLabel = log.file_name || shortFileId(log.file_id);
+    const detailText = formatAuditDetails(log.details);
+    const ipText = log.ip_address ? `IP ${log.ip_address}` : 'Khong co IP';
+    const subText = `${actor} - ${ipText}${detailText ? ` - ${detailText}` : ''}`;
+
+    return `
+        <div class="audit-table-row">
+            <span class="audit-time">${escapeHtml(formatDateTime(log.access_date))}</span>
+            <strong class="audit-event ${meta.kind}">
+                <i class="fa-solid ${meta.icon}"></i>
+                ${escapeHtml(meta.label)}
+            </strong>
+            <span class="audit-target">
+                <b>${escapeHtml(fileLabel)}</b>
+                <small>${escapeHtml(subText)}</small>
+            </span>
+            <em class="audit-status-badge ${meta.kind}">${escapeHtml(meta.status)}</em>
+        </div>
+    `;
+}
+
+function getAuditMeta(action = '') {
+    const normalized = String(action || '').toLowerCase();
+
+    if (normalized.includes('denied')) {
+        return { label: 'Bi tu choi', status: 'Tu choi', kind: 'denied', icon: 'fa-ban' };
+    }
+    if (normalized.includes('expired')) {
+        return { label: 'File tu huy', status: 'Da khoa', kind: 'expired', icon: 'fa-hourglass-end' };
+    }
+
+    const byAction = {
+        upload: { label: 'Tai file len', icon: 'fa-cloud-arrow-up' },
+        download: { label: 'Tai file', icon: 'fa-download' },
+        public_view: { label: 'Mo link chia se', icon: 'fa-link' },
+        public_download: { label: 'Tai bang link', icon: 'fa-share-nodes' },
+        permission_update: { label: 'Doi quyen', icon: 'fa-unlock-keyhole' },
+        delete: { label: 'Xoa file', icon: 'fa-trash' },
+        cleanup: { label: 'Don file het han', icon: 'fa-broom' }
+    };
+
+    const match = byAction[normalized] || { label: normalized || 'Su kien', icon: 'fa-circle-dot' };
+    return { ...match, status: 'Thanh cong', kind: 'success' };
+}
+
+function formatAuditDetails(details) {
+    if (!details) return '';
+    return String(details)
+        .replace(/expired_by_download_limit/g, 'het luot tai')
+        .replace(/expired_by_time/g, 'het thoi gian')
+        .replace(/expired_by_public_access/g, 'het han khi mo link')
+        .replace(/expired_by_cleanup/g, 'don file het han')
+        .replace(/not_owner/g, 'khong phai chu file')
+        .replace(/share_page/g, 'trang chia se')
+        .replace(/downloads_left=/g, 'con luot tai=')
+        .replace(/is_public=true/g, 'chuyen cong khai')
+        .replace(/is_public=false/g, 'chuyen rieng tu')
+        .replace(/;/g, ', ');
 }
 
 function setText(id, value) {

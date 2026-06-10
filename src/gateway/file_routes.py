@@ -622,7 +622,11 @@ def audit_logs():
                     return jsonify({'error': 'Access denied: Only file owner can view file audit logs'}), 403
                 query = query.filter(FileAccessLog.file_id == file_id)
             else:
-                query = query.filter(FileAccessLog.user_id == int(user_id))
+                own_file_ids = session.query(File.id).filter(File.user_id == int(user_id))
+                query = query.filter(or_(
+                    FileAccessLog.user_id == int(user_id),
+                    FileAccessLog.file_id.in_(own_file_ids)
+                ))
 
             logs = query.order_by(FileAccessLog.access_date.desc()).limit(limit).all()
             return jsonify({'count': len(logs), 'logs': [log.to_dict() for log in logs]}), 200
