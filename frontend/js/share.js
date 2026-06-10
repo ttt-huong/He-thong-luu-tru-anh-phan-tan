@@ -88,6 +88,7 @@ async function downloadSharedFile() {
 }
 
 function showError(message) {
+    clearInterval(countdownTimer);
     document.getElementById('shareLoading').hidden = true;
     document.getElementById('shareContent').hidden = true;
     document.getElementById('shareError').hidden = false;

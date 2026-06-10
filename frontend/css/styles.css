@@ -1510,6 +1510,11 @@ body.auth-pending {
     box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
 }
 
+.security-brand-mark i {
+    line-height: 1;
+    font-size: 18px;
+}
+
 .security-brand strong {
     display: block;
     font-size: 19px;
@@ -2159,6 +2164,18 @@ body.auth-pending {
     align-items: center;
     gap: 12px;
     margin-bottom: 30px;
+}
+
+.share-brand .security-brand-mark {
+    width: 56px;
+    height: 56px;
+    flex: 0 0 56px;
+    border-radius: 16px;
+}
+
+.share-brand .security-brand-mark i {
+    display: block;
+    font-size: 22px;
 }
 
 .share-brand strong,
