@@ -37,6 +37,7 @@ http://localhost:5000/register.html
 
 - Đăng nhập.
 - Upload file `.txt`, `.pdf`, hoặc ảnh hợp lệ.
+- Giới hạn mặc định: tối đa `500MB` cho mỗi file và `2GB` tổng dung lượng còn hiệu lực cho mỗi user.
 - Chọn public/private, thời gian tự hủy, số lượt tải.
 - Kết quả mong muốn: file xuất hiện trong danh sách và có link tải.
 

@@ -51,7 +51,8 @@ def create_app():
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
-    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+    max_upload_bytes = int(os.getenv('MAX_UPLOAD_BYTES', str(500 * 1024 * 1024)))
+    app.config['MAX_CONTENT_LENGTH'] = max_upload_bytes
     
     # Enable CORS for all routes
     CORS(app)
@@ -290,7 +291,8 @@ def create_app():
     
     @app.errorhandler(413)
     def request_entity_too_large(error):
-        return jsonify({'error': 'File too large. Maximum size is 100MB'}), 413
+        max_mb = app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)
+        return jsonify({'error': f'File too large. Maximum size is {max_mb}MB'}), 413
     
     logger.info(f"Gateway application created successfully")
     return app

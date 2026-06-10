@@ -40,7 +40,8 @@ STORAGE_NODES = {
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt'}
 IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 DANGEROUS_EXTENSIONS = {'exe', 'bat', 'cmd', 'com', 'php', 'js', 'html', 'svg', 'sh', 'ps1'}
-MAX_UPLOAD_BYTES = int(os.getenv('MAX_UPLOAD_BYTES', str(10 * 1024 * 1024)))
+MAX_UPLOAD_BYTES = int(os.getenv('MAX_UPLOAD_BYTES', str(500 * 1024 * 1024)))
+USER_STORAGE_QUOTA_BYTES = int(os.getenv('USER_STORAGE_QUOTA_BYTES', str(2 * 1024 * 1024 * 1024)))
 DEFAULT_TTL_SECONDS = int(os.getenv('DEFAULT_FILE_TTL_SECONDS', str(24 * 60 * 60)))
 MAX_TTL_SECONDS = int(os.getenv('MAX_FILE_TTL_SECONDS', str(7 * 24 * 60 * 60)))
 DEFAULT_DOWNLOAD_LIMIT = int(os.getenv('DEFAULT_DOWNLOAD_LIMIT', '3'))
@@ -218,6 +219,14 @@ def _cleanup_expired_files(session, user_id=None, limit=100):
     return cleaned
 
 
+def _get_user_storage_used(session, user_id):
+    active_files = session.query(File).filter(
+        File.user_id == int(user_id),
+        *_is_active_file_filter()
+    ).all()
+    return sum(file.file_size or 0 for file in active_files)
+
+
 def _rate_key():
     user_id = get_current_user_id()
     return f'user:{user_id}' if user_id else (request.remote_addr or 'unknown')
@@ -263,6 +272,16 @@ def upload_file():
             user = session.query(User).filter(User.id == user_id).first()
             if not user:
                 return jsonify({'error': 'User not found'}), 404
+
+            _cleanup_expired_files(session, user_id=user_id)
+            used_bytes = _get_user_storage_used(session, user_id)
+            if used_bytes + len(file_content) > USER_STORAGE_QUOTA_BYTES:
+                return jsonify({
+                    'error': 'User storage quota exceeded',
+                    'used_bytes': used_bytes,
+                    'quota_bytes': USER_STORAGE_QUOTA_BYTES,
+                    'file_size': len(file_content)
+                }), 413
 
             storage_node, _ = _upload_to_storage(file_content, stored_filename)
             expires_at = datetime.utcnow() + timedelta(seconds=ttl_seconds)

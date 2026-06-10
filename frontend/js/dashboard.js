@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let activeVaultFilter = 'all';
-const DEMO_STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
+const USER_STORAGE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 function hydrateUserProfile() {
     const user = getCurrentUser();
@@ -205,10 +206,8 @@ function setupUploadHandlers() {
     });
 
     function handleFileSelect(file) {
-        const maxSize = 10 * 1024 * 1024;
-
-        if (file.size > maxSize) {
-            showAlert('File vượt quá giới hạn 10MB.', 'error');
+        if (file.size > MAX_UPLOAD_BYTES) {
+            showAlert('File vượt quá giới hạn 500MB.', 'error');
             return;
         }
 
@@ -272,11 +271,11 @@ function updateStorageUsage(ownFiles) {
     const totalBytes = (ownFiles || []).reduce((sum, file) => {
         return sum + Number(file.file_size || file.size || 0);
     }, 0);
-    const percent = Math.min(100, Math.round((totalBytes / DEMO_STORAGE_LIMIT_BYTES) * 100));
+    const percent = Math.min(100, Math.round((totalBytes / USER_STORAGE_LIMIT_BYTES) * 100));
     const ring = document.getElementById('capacityRing');
 
     setText('storageUsedText', formatFileSize(totalBytes));
-    setText('storageLimitText', formatFileSize(DEMO_STORAGE_LIMIT_BYTES));
+    setText('storageLimitText', formatFileSize(USER_STORAGE_LIMIT_BYTES));
     setText('storagePercentText', `${percent}%`);
 
     if (ring) {
