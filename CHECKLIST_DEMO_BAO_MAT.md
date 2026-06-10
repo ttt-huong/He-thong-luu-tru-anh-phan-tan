@@ -1,100 +1,117 @@
-# Checklist demo bảo mật sau MVP
+# Checklist demo bao mat sau MVP
 
-Tài liệu này dùng để test nhanh các phần đã hoàn thiện sau phần 5.
+Tai lieu nay dung de test nhanh cac tinh nang bao mat chinh cua du an.
 
-## Trạng thái hoàn thành
+## Trang thai hoan thanh
 
-- Phần 1: Đăng ký, đăng nhập, JWT.
-- Phần 2: Chuyển hướng giao diện sau đăng nhập.
-- Phần 3: Upload file thật.
-- Phần 4: Download file thật.
-- Phần 5: Phân quyền public/private và chống IDOR cơ bản.
-- Phần 6: Tự hủy theo thời gian.
-- Phần 7: Audit log.
-- Phần 8: Bảo mật API cơ bản.
+- Phan 1: Dang ky, dang nhap, JWT.
+- Phan 2: Chuyen huong giao dien sau dang nhap.
+- Phan 3: Upload file that.
+- Phan 4: Download file that.
+- Phan 5: Phan quyen public/private va chong IDOR co ban.
+- Phan 6: Tu huy theo thoi gian.
+- Phan 7: Audit log.
+- Phan 8: Bao mat API co ban.
+- Phan 9: Link chia se public cho nguoi ngoai.
 
-## Cách chạy
+## Cach chay
 
 ```powershell
 docker compose up -d --build
 ```
 
-Mở:
+Mo:
 
 ```text
 http://localhost:5000/register.html
 ```
 
-## Kịch bản test chính
+## Kich ban test chinh
 
 ### 1. Auth
 
-- Đăng ký tài khoản mới với mật khẩu mạnh.
-- Thử mật khẩu yếu hoặc phổ biến như `Password1`, `Password123`, `Admin123`.
-- Kết quả mong muốn: mật khẩu phổ biến bị từ chối.
+- Dang ky tai khoan moi voi mat khau manh.
+- Thu mat khau yeu hoac pho bien nhu `Password1`, `Password123`, `Admin123`.
+- Ket qua mong muon: mat khau pho bien bi tu choi.
 
 ### 2. Upload
 
-- Đăng nhập.
-- Upload file `.txt`, `.pdf`, hoặc ảnh hợp lệ.
-- Giới hạn mặc định: tối đa `500MB` cho mỗi file và `2GB` tổng dung lượng còn hiệu lực cho mỗi user.
-- Chọn public/private, thời gian tự hủy, số lượt tải.
-- Kết quả mong muốn: file xuất hiện trong danh sách và có link tải.
+- Dang nhap.
+- Upload file `.txt`, `.pdf`, hoac anh hop le.
+- Gioi han mac dinh: toi da `500MB` cho moi file va `2GB` tong dung luong con hieu luc cho moi user.
+- Chon public/private, thoi gian tu huy, so luot tai.
+- Ket qua mong muon: file xuat hien trong danh sach va co link tai.
 
 ### 3. Download limit
 
-- Upload file với số lượt tải là `1`.
-- Download lần 1.
-- Download lại lần 2.
-- Kết quả mong muốn: lần 1 thành công, lần 2 trả lỗi `410`.
+- Upload file voi so luot tai la `1`.
+- Download lan 1.
+- Download lai lan 2.
+- Ket qua mong muon: lan 1 thanh cong, lan 2 tra loi `410`.
 
-### 4. Tự hủy theo thời gian
+### 4. Tu huy theo thoi gian
 
-- Upload file qua API với `ttl_seconds=1`.
-- Chờ 2 giây.
-- Gọi danh sách file hoặc gọi endpoint:
+- Upload file qua API voi `ttl_seconds=1`.
+- Cho 2 giay.
+- Goi danh sach file hoac endpoint:
 
 ```text
 POST /api/files/cleanup-expired
 ```
 
-- Download lại file đã hết hạn.
-- Kết quả mong muốn: file bị ẩn khỏi danh sách, download trả `410`, metadata được đánh dấu đã xóa.
+- Download lai file da het han.
+- Ket qua mong muon: file bi an khoi danh sach, download tra `410`, metadata duoc danh dau da xoa.
 
-### 5. Chống IDOR
+### 5. Chong IDOR
 
-- Tài khoản A upload file private.
-- Tài khoản B thử download file đó bằng ID/link.
-- Tài khoản B thử xóa hoặc đổi quyền file đó.
-- Kết quả mong muốn: B bị từ chối `403`.
+- Tai khoan A upload file private.
+- Tai khoan B thu download file do bang ID/link.
+- Tai khoan B thu xoa hoac doi quyen file do.
+- Ket qua mong muon: B bi tu choi `403`.
 
 ### 6. Public/private
 
-- Tài khoản A đổi file từ private sang public.
-- Tài khoản B download lại.
-- Kết quả mong muốn: B download được khi public.
+- Tai khoan A doi file tu private sang public.
+- Tai khoan B download lai.
+- Ket qua mong muon: B download duoc khi public.
 
-### 7. Audit log
+### 7. Link chia se cho nguoi ngoai
 
-- Thực hiện upload, download, đổi quyền, xóa, truy cập bị từ chối.
-- Gọi:
+- Tai khoan A upload file o che do public.
+- Bam nut sao chep link tren dong file.
+- Mo link dang:
+
+```text
+http://localhost:5000/share.html?id=<file_id>
+```
+
+- Ket qua mong muon:
+- Nguoi nhan khong can dang nhap van xem duoc ten file, dung luong, luot tai con lai va thoi gian tu huy.
+- Bam `Tai xuong` se tai file qua endpoint public.
+- Luot tai con lai giam sau moi lan tai.
+- File private khi mo link public se bi tu choi.
+
+### 8. Audit log
+
+- Thuc hien upload, download, doi quyen, xoa, truy cap bi tu choi.
+- Goi:
 
 ```text
 GET /api/files/audit-logs
 GET /api/files/audit-logs?file_id=<file_id>
 ```
 
-- Kết quả mong muốn:
-  - Không truyền `file_id`: xem log hành động của user hiện tại.
-  - Có `file_id`: chủ file xem được toàn bộ log của file.
-  - User không phải chủ file bị từ chối `403`.
+- Ket qua mong muon:
+- Khong truyen `file_id`: xem log hanh dong cua user hien tai.
+- Co `file_id`: chu file xem duoc toan bo log cua file.
+- User khong phai chu file bi tu choi `403`.
 
-### 8. Rate limit cơ bản
+### 9. Rate limit co ban
 
-- Gửi quá nhiều request login/register/upload/download trong thời gian ngắn.
-- Kết quả mong muốn: API trả `429 Too many requests`.
+- Gui qua nhieu request login/register/upload/download trong thoi gian ngan.
+- Ket qua mong muon: API tra `429 Too many requests`.
 
-## Endpoint quan trọng
+## Endpoint quan trong
 
 ```text
 POST /api/auth/register
@@ -107,11 +124,13 @@ DELETE /api/files/<file_id>
 PUT /api/files/<file_id>/permissions
 GET /api/files/audit-logs
 POST /api/files/cleanup-expired
+GET /api/files/public/<file_id>
+GET /api/files/public/<file_id>/download
 ```
 
-## Ghi chú bàn giao
+## Ghi chu ban giao
 
-- Rate limit hiện dùng bộ nhớ trong gateway, phù hợp demo một instance.
-- Nếu chạy nhiều gateway, nên chuyển rate limit sang Redis.
-- Cleanup file hết hạn hiện chạy khi mở danh sách, khi download file hết hạn, hoặc gọi endpoint cleanup thủ công.
-- Docker Desktop cần chạy trước khi dùng `docker compose`.
+- Rate limit hien dung bo nho trong gateway, phu hop demo mot instance.
+- Neu chay nhieu gateway, nen chuyen rate limit sang Redis.
+- Cleanup file het han hien chay khi mo danh sach, khi download file het han, hoac goi endpoint cleanup thu cong.
+- Docker Desktop can chay truoc khi dung `docker compose`.

@@ -232,6 +232,96 @@ def _rate_key():
     return f'user:{user_id}' if user_id else (request.remote_addr or 'unknown')
 
 
+def _get_public_file_or_error(session, file_id):
+    file_record = session.query(File).filter(File.id == file_id).first()
+    if not file_record:
+        return None, ({'error': 'File not found'}, 404)
+
+    if file_record.deleted or file_record.is_deleted:
+        return None, ({'error': 'File has been deleted'}, 410)
+
+    if _is_expired(file_record):
+        _mark_deleted(file_record)
+        _audit(session, None, file_id, 'expired', 'expired_by_public_access')
+        _delete_from_storage(file_record)
+        session.commit()
+        return None, ({'error': 'File has expired'}, 410)
+
+    if not file_record.is_public:
+        return None, ({'error': 'This file is private'}, 403)
+
+    if file_record.downloads_left is not None and file_record.downloads_left <= 0:
+        _mark_deleted(file_record)
+        _audit(session, None, file_id, 'expired', 'expired_by_download_limit')
+        _delete_from_storage(file_record)
+        session.commit()
+        return None, ({'error': 'Download limit reached'}, 410)
+
+    return file_record, None
+
+
+@file_bp.route('/public/<file_id>', methods=['GET'])
+def get_public_file(file_id):
+    session = Session()
+    try:
+        file_record, error = _get_public_file_or_error(session, file_id)
+        if error:
+            body, status = error
+            return jsonify(body), status
+
+        _audit(session, None, file_id, 'public_view', 'share_page')
+        session.commit()
+
+        return jsonify({
+            'message': 'Public file retrieved successfully',
+            'file': file_record.to_dict(),
+            'download_url': f'/api/files/public/{file_id}/download'
+        }), 200
+    except Exception as exc:
+        session.rollback()
+        logger.error(f'Public file metadata error: {exc}', exc_info=True)
+        return jsonify({'error': 'Failed to retrieve public file'}), 500
+    finally:
+        session.close()
+
+
+@file_bp.route('/public/<file_id>/download', methods=['GET'])
+def download_public_file(file_id):
+    session = Session()
+    try:
+        file_record, error = _get_public_file_or_error(session, file_id)
+        if error:
+            body, status = error
+            return jsonify(body), status
+
+        file_content, served_node = _download_from_storage(file_record)
+        file_record.download_count = (file_record.download_count or 0) + 1
+        if file_record.downloads_left is not None:
+            file_record.downloads_left -= 1
+
+        _audit(session, None, file_id, 'public_download', f'node={served_node};downloads_left={file_record.downloads_left}')
+
+        if file_record.downloads_left == 0:
+            _mark_deleted(file_record)
+            _audit(session, None, file_id, 'expired', 'expired_by_download_limit')
+            _delete_from_storage(file_record)
+
+        session.commit()
+
+        return send_file(
+            BytesIO(file_content),
+            mimetype=file_record.mime_type or 'application/octet-stream',
+            as_attachment=True,
+            download_name=file_record.original_name or file_record.filename
+        )
+    except Exception as exc:
+        session.rollback()
+        logger.error(f'Public download error: {exc}', exc_info=True)
+        return jsonify({'error': 'Download failed'}), 500
+    finally:
+        session.close()
+
+
 @file_bp.route('/upload', methods=['POST'])
 @jwt_required
 @rate_limited(limit=20, window_seconds=60, key_func=_rate_key)

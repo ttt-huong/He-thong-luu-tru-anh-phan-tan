@@ -2132,6 +2132,138 @@ body.auth-pending {
     cursor: pointer;
 }
 
+.share-page-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 36%),
+        radial-gradient(circle at 82% 12%, rgba(16, 185, 129, 0.16), transparent 30%),
+        var(--bg-canvas);
+}
+
+.share-card {
+    width: min(720px, 100%);
+    padding: 32px;
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(14px);
+}
+
+.share-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.share-brand strong,
+.share-brand span {
+    display: block;
+}
+
+.share-brand strong {
+    color: var(--text-navy);
+    font-size: 20px;
+}
+
+.share-brand span {
+    color: var(--text-slate);
+    font-weight: 700;
+}
+
+.share-state {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-slate);
+    text-align: center;
+}
+
+.share-state.error i {
+    color: var(--accent-danger);
+    font-size: 42px;
+}
+
+.share-state.error h1 {
+    color: var(--text-navy);
+}
+
+.share-file-icon {
+    width: 74px;
+    height: 74px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    border-radius: 18px;
+    color: var(--accent-blue);
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.16);
+    font-size: 30px;
+}
+
+.share-card h1 {
+    color: var(--text-navy);
+    font-size: 34px;
+    line-height: 1.15;
+    margin: 6px 0 10px;
+    overflow-wrap: anywhere;
+}
+
+.share-copy {
+    max-width: 560px;
+    color: var(--text-slate);
+    font-size: 16px;
+}
+
+.share-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 24px 0;
+}
+
+.share-meta-grid div {
+    min-height: 86px;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    background: var(--bg-canvas);
+}
+
+.share-meta-grid span {
+    display: block;
+    color: var(--text-slate);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.share-meta-grid strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-navy);
+    font-size: 18px;
+}
+
+.share-download-btn {
+    min-width: 190px;
+}
+
+.loading.dark {
+    color: var(--accent-blue);
+    border-color: rgba(37, 99, 235, 0.18);
+    border-top-color: currentColor;
+}
+
 @media (max-width: 1100px) {
     .security-app-shell {
         grid-template-columns: 88px minmax(0, 1fr);
@@ -2234,5 +2366,21 @@ body.auth-pending {
     .audit-table-row {
         grid-template-columns: 1fr;
         gap: 4px;
+    }
+
+    .share-page-shell {
+        padding: 18px;
+    }
+
+    .share-card {
+        padding: 22px;
+    }
+
+    .share-card h1 {
+        font-size: 26px;
+    }
+
+    .share-meta-grid {
+        grid-template-columns: 1fr;
     }
 }

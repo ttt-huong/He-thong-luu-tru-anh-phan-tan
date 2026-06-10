@@ -180,7 +180,7 @@ function createFileCard(file, isOwner) {
     const statusClass = file.is_public ? 'public' : 'private';
     const statusText = file.is_public ? 'Công khai' : 'Riêng tư';
     const downloadsLeft = file.downloads_left ?? 0;
-    const downloadUrl = `${window.location.origin}/api/files/${file.id}`;
+    const shareUrl = `${window.location.origin}/share.html?id=${encodeURIComponent(file.id)}`;
     card.className = 'file-card vault-file-row';
     card.dataset.name = fileName.toLowerCase();
     card.dataset.visibility = file.is_public ? 'public' : 'private';
@@ -222,10 +222,15 @@ function createFileCard(file, isOwner) {
     const copyBtn = document.createElement('button');
     copyBtn.className = 'action-btn copy';
     copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>';
-    copyBtn.title = 'Sao chép link';
+    copyBtn.title = file.is_public ? 'Sao chép link chia sẻ' : 'Chỉ chia sẻ được file công khai';
     copyBtn.onclick = async () => {
-        await copyToClipboard(downloadUrl);
-        showAlert('Đã sao chép link tải vào bộ nhớ tạm.', 'success');
+        if (!file.is_public) {
+            showAlert('File đang riêng tư. Hãy chuyển sang công khai trước khi chia sẻ link.', 'error');
+            return;
+        }
+
+        await copyToClipboard(shareUrl);
+        showAlert('Đã sao chép link chia sẻ tự hủy.', 'success');
         if (typeof logAction === 'function') {
             logAction('SHARE', `Copied link for ${file.id.substring(0, 8)}.`);
         }

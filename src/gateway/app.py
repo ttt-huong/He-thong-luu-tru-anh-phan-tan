@@ -241,6 +241,11 @@ def create_app():
     def files_html():
         """Serve files.html explicitly"""
         return send_from_directory(frontend_dir, 'files.html')
+
+    @app.route('/share.html', methods=['GET'])
+    def share_html():
+        """Serve public share page explicitly"""
+        return send_from_directory(frontend_dir, 'share.html')
     
     @app.route('/styles.css', methods=['GET'])
     def styles_css():

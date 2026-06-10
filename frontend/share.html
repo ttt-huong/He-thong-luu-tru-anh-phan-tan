@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecuShare - Link chia sẻ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <main class="share-page-shell">
+        <section class="share-card">
+            <div class="share-brand">
+                <span class="security-brand-mark"><i class="fa-solid fa-shield-halved"></i></span>
+                <div>
+                    <strong>SecuShare</strong>
+                    <span>Link chia sẻ tự hủy</span>
+                </div>
+            </div>
+
+            <div id="shareLoading" class="share-state">
+                <span class="loading dark"></span>
+                <p>Đang kiểm tra link bảo mật...</p>
+            </div>
+
+            <div id="shareError" class="share-state error" hidden>
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <h1>Không thể mở file</h1>
+                <p id="shareErrorText">Link không hợp lệ hoặc file đã hết hạn.</p>
+            </div>
+
+            <div id="shareContent" hidden>
+                <div class="share-file-icon">
+                    <i id="shareFileIcon" class="fa-solid fa-file-shield"></i>
+                </div>
+                <p class="security-kicker">Public secure transfer</p>
+                <h1 id="shareFileName">File được chia sẻ</h1>
+                <p class="share-copy">File này được chia sẻ công khai qua SecuShare. Link vẫn tuân thủ thời gian tự hủy và giới hạn lượt tải.</p>
+
+                <div class="share-meta-grid">
+                    <div>
+                        <span>Dung lượng</span>
+                        <strong id="shareFileSize">-</strong>
+                    </div>
+                    <div>
+                        <span>Lượt tải còn lại</span>
+                        <strong id="shareDownloadsLeft">-</strong>
+                    </div>
+                    <div>
+                        <span>Tự hủy sau</span>
+                        <strong id="shareExpiresIn">-</strong>
+                    </div>
+                </div>
+
+                <button class="security-primary-action share-download-btn" id="shareDownloadBtn" type="button">
+                    <i class="fa-solid fa-download"></i>
+                    Tải xuống
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/share.js"></script>
+</body>
+</html>
